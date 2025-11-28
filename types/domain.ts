@@ -178,3 +178,36 @@ export interface IntegrationConfig {
   lastSyncAt?: string;
   metadata?: Record<string, unknown>;
 }
+
+export interface ConsentRecord {
+  id: string;
+  studentId: string;
+  guardianId: string;
+  guardianName: string;
+  guardianEmail: string;
+  organizationId: string;
+  consentType: "full" | "limited" | "communication_only" | "none" | "pending";
+  dataCategories: DataConsentCategory[];
+  grantedAt: string;
+  expiresAt?: string;
+  revokedAt?: string;
+  status: "pending" | "granted" | "expired" | "revoked";
+  verificationMethod: "email" | "in_person" | "portal";
+  ipAddress?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export type DataConsentCategory = 
+  | "basic_info"      // Name, grade level
+  | "academic"        // Grades, assignments
+  | "behavioral"      // Attendance, conduct
+  | "communication"   // Chat, messaging
+  | "gamification"    // XP, achievements
+  | "analytics";      // Usage data
+
+export interface ConsentRequirement {
+  category: DataConsentCategory;
+  required: boolean;
+  description: string;
+  ageThreshold?: number; // COPPA: features requiring parental consent if under this age
+}

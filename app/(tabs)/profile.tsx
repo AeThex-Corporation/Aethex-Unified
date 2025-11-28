@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useAppStore, useTheme, useTerminology } from "@/store/appStore";
+import { ConsentStatus } from "@/components/GuardianConsentBanner";
 
 interface MenuItemProps {
   icon: React.ReactNode;
@@ -317,6 +318,36 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
       </Animated.View>
+
+      {isEducation && currentMember?.role === "student" && (
+        <>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "600",
+              color: theme.textSecondary,
+              marginBottom: 12,
+              marginLeft: 4,
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
+            Guardian Consent
+          </Text>
+          <Animated.View
+            entering={FadeIn.delay(250).duration(400)}
+            style={{
+              backgroundColor: mode === "day" ? "#f8fafc" : "#1a1a24",
+              borderRadius: 16,
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: mode === "day" ? "#e2e8f0" : "#2d2d3a",
+            }}
+          >
+            <ConsentStatus studentId={currentMember.id} />
+          </Animated.View>
+        </>
+      )}
 
       <Text
         style={{

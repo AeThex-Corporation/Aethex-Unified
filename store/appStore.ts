@@ -14,6 +14,7 @@ import {
 } from "../types/domain";
 import { configService, MarketConfiguration } from "../services/configurationService";
 import { complianceService } from "../services/complianceService";
+import { consentService } from "../services/consentService";
 import { 
   getMembersForContext, 
   getLedgerItemsForContext, 
@@ -164,6 +165,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     await AsyncStorage.setItem("aethex_member", JSON.stringify(currentMember));
     await AsyncStorage.setItem("aethex_mode", mode);
     await AsyncStorage.setItem("aethex_context", marketContext);
+
+    if (marketContext === "education" && currentMember.role === "student") {
+      consentService.createMockConsent(currentMember.id, organization.id);
+    }
 
     return true;
   },

@@ -162,6 +162,39 @@ Scan the QR code with Expo Go to test on a physical device.
 - Secondary: #1a1a24
 - Text: #f8fafc
 
+## Guardian Consent System (Education Context)
+
+### ConsentService (`services/consentService.ts`)
+- Manages COPPA/FERPA compliant guardian consent for minors
+- Tracks consent per data category (basic_info, academic, behavioral, communication, gamification, analytics)
+- Auto-grants mock consent for demo mode
+- Visible on student profile page in education context
+
+### Consent Types
+- `full`: Complete access to all features
+- `limited`: Access to basic educational features only
+- `communication_only`: Chat and messaging features
+- `none`: No consent granted
+
+### Age Thresholds
+- COPPA (under 13): Requires guardian consent for communication, gamification
+- FERPA (under 18): Requires guardian consent for data export, analytics
+
+## Database Integration (Supabase)
+
+### Graceful Fallback
+- App works fully with mock data when Supabase credentials unavailable
+- `isSupabaseConfigured()` check before all DB operations
+- `getSupabaseClient()` helper for type-safe access
+
+### Schema Location
+- Complete SQL schema in `database/schema.sql`
+- Tables: members, organizations, ledger_items, engagement_events, audit_logs, chat_messages, skill_nodes, consent_records
+
+### Environment Variables Required
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+
 ## Recent Changes (2025-11-28)
 
 1. Added unified domain models in `types/domain.ts`
@@ -172,3 +205,8 @@ Scan the QR code with Expo Go to test on a physical device.
 6. Added PII protection to guild/study group chat
 7. Updated login with market context selection
 8. Added skill tree and XP tracking in Night Mode
+9. Created `ConsentService` for guardian consent workflow
+10. Added `ConsentStatus` component to profile page for students
+11. Integrated Supabase with graceful mock data fallback
+12. Fixed type safety issues with null checks in database service
+13. Added `GuardianConsentBanner` component for consent warnings
