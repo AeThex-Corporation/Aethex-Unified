@@ -1,137 +1,103 @@
-# Aethex - Wellness & Productivity Super-App
+# AeThex Companion - Dual-Mode Super-App
 
 ## Overview
-Aethex is a comprehensive mobile application that combines six productivity and wellness modules into one unified ecosystem. Built with Expo and React Native, it features a calming, modern interface inspired by Notion and Headspace.
+AeThex Companion is a React Native (Expo) mobile application that transforms its entire UI/UX based on user role. It features two distinct modes:
+
+- **Day Mode (Enterprise)**: For School Admins/Business Owners - Clean, professional interface
+- **Night Mode (Creator)**: For Developers/Artists - Dark, neon-accented creative interface
 
 ## Project Structure
 
 ```
-├── App.tsx                    # Root component with navigation
-├── app.json                   # Expo configuration
-├── components/                # Reusable UI components
-│   ├── Button.tsx             # Primary/secondary button with animations
-│   ├── Card.tsx               # Elevated card component
-│   ├── ErrorBoundary.tsx      # App crash handler
-│   ├── ErrorFallback.tsx      # Error UI component
-│   ├── HeaderTitle.tsx        # Custom header with app logo
-│   ├── ScreenFlatList.tsx     # FlatList with safe area handling
-│   ├── ScreenKeyboardAwareScrollView.tsx  # Keyboard-aware scroll
-│   ├── ScreenScrollView.tsx   # ScrollView with safe area handling
-│   ├── Spacer.tsx             # Spacing utility component
-│   ├── ThemedText.tsx         # Themed typography component
-│   └── ThemedView.tsx         # Themed view component
-├── constants/
-│   └── theme.ts               # Design tokens (colors, spacing, typography)
-├── hooks/
-│   ├── useColorScheme.ts      # System color scheme detection
-│   ├── useScreenInsets.ts     # Safe area insets hook
-│   └── useTheme.ts            # Theme access hook
-├── navigation/                # React Navigation configuration
-│   ├── DashboardStackNavigator.tsx
-│   ├── HabitsStackNavigator.tsx
-│   ├── StudyStackNavigator.tsx
-│   ├── FinanceStackNavigator.tsx
-│   ├── MindfulStackNavigator.tsx
-│   ├── FitnessStackNavigator.tsx
-│   ├── MainTabNavigator.tsx   # 6-tab bottom navigation
-│   └── screenOptions.ts       # Common screen options
-├── screens/                   # All app screens
-│   ├── DashboardScreen.tsx    # Main dashboard with module overview
-│   ├── SettingsScreen.tsx     # App settings
-│   ├── HabitsScreen.tsx       # Habit tracking & mood logging
-│   ├── AddHabitScreen.tsx     # Create new habit
-│   ├── MoodLogScreen.tsx      # Log mood entry
-│   ├── StudyScreen.tsx        # AI Study Buddy main screen
-│   ├── FlashcardsScreen.tsx   # Flashcard study interface
-│   ├── QuizScreen.tsx         # Quiz interface
-│   ├── FinanceScreen.tsx      # Finance overview
-│   ├── AddExpenseScreen.tsx   # Log new expense
-│   ├── AddGoalScreen.tsx      # Create financial goal
-│   ├── MindfulScreen.tsx      # Mindfulness hub
-│   ├── BreathingScreen.tsx    # Breathing exercise
-│   ├── JournalScreen.tsx      # Journal entries list
-│   ├── JournalEntryScreen.tsx # Create/view journal entry
-│   ├── FitnessScreen.tsx      # Fitness overview
-│   ├── WorkoutScreen.tsx      # Workout session
-│   └── LogWorkoutScreen.tsx   # Log completed workout
-└── store/
-    └── AppStore.ts            # In-memory state management
+├── app/                        # Expo Router file-based navigation
+│   ├── _layout.tsx             # Root layout with navigation
+│   ├── index.tsx               # Entry point with auth redirect
+│   ├── (auth)/                 # Authentication screens
+│   │   ├── _layout.tsx
+│   │   └── login.tsx           # Login with mock credentials
+│   └── (tabs)/                 # Main tab screens
+│       ├── _layout.tsx         # Tab navigator with dual configuration
+│       ├── home.tsx            # Dashboard (Day) / Bounty Feed (Night)
+│       ├── scanner.tsx         # Receipt Scanner (Day) / Digital Wallet (Night)
+│       ├── actions.tsx         # Pending Approvals (Day) / Guild Chat (Night)
+│       └── profile.tsx         # Profile with Mode Toggle
+├── store/
+│   └── appStore.ts             # Zustand store for mode & auth state
+├── global.css                  # Tailwind/NativeWind styles
+├── tailwind.config.js          # Tailwind configuration
+└── babel.config.js             # Babel with NativeWind preset
 ```
 
-## Core Modules
+## Tech Stack
 
-1. **Dashboard** - Unified progress overview with streaks, badges, and quick access to all modules
-2. **Habits & Mood** - Track daily habits with streaks, log mood with emotion picker
-3. **AI Study Buddy** - Generate flashcards and quizzes (AI-ready, uses mock data for prototype)
-4. **Finance Coach** - Log expenses, track financial goals, view spending insights
-5. **Mindful Moments** - Breathing exercises, gratitude journaling, creative journal
-6. **Fitness Companion** - AI workout generator (mock), workout logging, progress tracking
+- **Framework**: React Native (Expo) with TypeScript
+- **Navigation**: Expo Router (File-based routing)
+- **Styling**: NativeWind (Tailwind CSS for React Native)
+- **State Management**: Zustand (global mode & auth state)
+- **Icons**: Lucide React Native
+- **Animations**: React Native Reanimated
+- **Storage**: AsyncStorage for session persistence
 
-## Design System
+## The Mode System
 
-### Colors
-- Primary: #6366F1 (Soft Indigo)
-- Secondary: #10B981 (Emerald Green)
-- Accent: #F59E0B (Warm Amber)
-- Success: #22C55E (Bright Green)
-- Calm: #A78BFA (Light Purple)
-- Background: #F8FAFC (Cool White)
-- Text: #1E293B (Slate Grey)
+### Day Mode (Enterprise)
+- **Theme**: Clean White (#ffffff), Deep Blue accents (#1e3a8a)
+- **Tabs**: Home (Alerts), Scan (Camera), Actions (Approvals), Profile
+- **Features**:
+  - Compliance Dashboard with system stats
+  - Receipt Scanner for expense tracking
+  - Pending Approvals with approve/reject actions
 
-### Module Colors
-- Habits: #6366F1
-- Study: #8B5CF6
-- Finance: #10B981
-- Mindful: #A78BFA
-- Journal: #EC4899
-- Fitness: #F59E0B
+### Night Mode (Creator)
+- **Theme**: Deep Black (#0B0A0F), Neon Green accents (#22c55e)
+- **Tabs**: Feed (Bounties), Wallet (ID Card), Guild (Chat), Profile
+- **Features**:
+  - Bounty Feed with job listings
+  - Animated Digital ID Card with QR code
+  - Guild Chat with channels and messaging
 
-### Typography
-- H1: 28px, Bold
-- H2: 24px, SemiBold
-- H3: 20px, SemiBold
-- H4: 17px, SemiBold
-- Body: 16px, Regular
-- Small: 14px, Regular
-- Caption: 12px, Medium
+## Authentication
 
-### Spacing Scale
-- xs: 4px, sm: 8px, md: 12px, lg: 16px, xl: 20px, 2xl: 24px, 3xl: 32px
+Mock login credentials:
+- `admin` - Logs in as Day Mode (School Administrator)
+- `creator` - Logs in as Night Mode (Verified Architect)
 
-## State Management
-Uses in-memory store (store/AppStore.ts) with React hooks. No persistent storage in this prototype - all data resets on app restart.
+Session persists via AsyncStorage.
 
-## Key Patterns
+## Key Components
 
-### Screen Structure
-All screens use safe area insets via helper components:
-- `ScreenScrollView` for scrollable content
-- `ScreenKeyboardAwareScrollView` for forms with inputs
-- `ScreenFlatList` for lists
+### Mode Toggle
+The profile screen contains a "Switch View" button that instantly toggles between Day and Night modes, changing:
+- Theme colors
+- Tab icons and labels
+- Screen content and layouts
+- Navigation structure
 
-### Navigation
-- 6-tab bottom navigation using React Navigation
-- Each tab has its own stack navigator
-- Transparent headers with blur effect on iOS
+### Zustand Store
+Manages global state including:
+- `mode`: 'day' | 'night'
+- `user`: User object with role info
+- `isAuthenticated`: Auth status
+- Theme switching and persistence
 
-### Animations
-- Spring animations for button presses and card interactions
-- Breathing circle animation in mindfulness module
-- Flashcard flip animation
+## Running the App
 
-## Development Notes
+```bash
+npm run dev
+```
 
-- This is an Expo project - use `npm run dev` to start
-- All features work with mock/sample data
-- AI features are prepared for integration but use static content
-- Haptic feedback is enabled for touch interactions
-- Supports light and dark color schemes
+Scan the QR code with Expo Go to test on a physical device.
 
-## Next Steps for Full Implementation
+## Design Tokens
 
-1. Add AsyncStorage for data persistence
-2. Integrate OpenAI API for AI features (study content generation, financial tips, workout plans)
-3. Add push notifications for habit reminders
-4. Implement data export/backup functionality
-5. Add analytics dashboards with charts
-6. Add social/sharing features
+### Day Mode Colors
+- Background: #ffffff
+- Accent: #1e3a8a
+- Secondary: #f1f5f9
+- Text: #1e293b
+
+### Night Mode Colors
+- Background: #0B0A0F
+- Accent: #22c55e
+- Secondary: #1a1a24
+- Text: #f8fafc

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Aethex",
-    "slug": "aethex",
+    "name": "AeThex Companion",
+    "slug": "aethex-companion",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -10,38 +10,41 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.aethex.app"
+      "bundleIdentifier": "com.aethex.companion"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#6366F1",
+        "backgroundColor": "#0B0A0F",
         "foregroundImage": "./assets/images/icon.png"
       },
-      "package": "com.aethex.app",
+      "package": "com.aethex.companion",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "single",
+      "bundler": "metro",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "expo-router",
       [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#6366F1",
+          "backgroundColor": "#0B0A0F",
           "dark": {
-            "backgroundColor": "#0F172A"
+            "backgroundColor": "#0B0A0F"
           }
         }
       ],
       "expo-web-browser"
     ],
     "experiments": {
-      "reactCompiler": true
+      "reactCompiler": true,
+      "typedRoutes": true
     }
   }
 }

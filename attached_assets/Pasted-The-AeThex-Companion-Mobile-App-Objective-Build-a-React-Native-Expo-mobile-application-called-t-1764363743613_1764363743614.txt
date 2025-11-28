@@ -1,0 +1,78 @@
+The "AeThex Companion" Mobile App
+Objective: Build a React Native (Expo) mobile application called the "AeThex Companion." This is a "Super-App" that changes its entire UI/UX based on the user's role.
+
+Tech Stack:
+
+Framework: React Native (Expo) with TypeScript.
+
+Navigation: Expo Router (File-based routing).
+
+Styling: NativeWind (Tailwind CSS for React Native).
+
+State Management: Zustand (for handling the "Day/Night" mode switch).
+
+Icons: Lucide React Native.
+
+Core Architecture: The "Mode" System The app has two distinct "Modes" (Themes & Layouts) controlled by a global state (useAppStore).
+
+Day Mode (Enterprise):
+
+Target: School Admins/Business Owners.
+
+Theme: Clean White background (#ffffff), Deep Blue accents (#1e3a8a), Inter font.
+
+Tabs: Home (Alerts), Scan (Camera), Actions (Approvals), Profile.
+
+Night Mode (Creator):
+
+Target: Developers/Artists.
+
+Theme: Deep Black background (#0B0A0F), Neon Green accents (#22c55e), Monospace font.
+
+Tabs: Feed (Bounties), Wallet (ID Card), Guild (Chat), Profile.
+
+Feature Requirements (Mock Data Only for MVP):
+
+Authentication Screen:
+
+A login screen with a "Sign in with AeThex Passport" button.
+
+Mock Login Logic:
+
+If username is admin, log in as Day Mode.
+
+If username is creator, log in as Night Mode.
+
+Screen 1: The "Home/Feed" (Dual Interface)
+
+If Day Mode: Show a "Compliance Dashboard." Cards for "PII Incidents Blocked," "Active Students," and "System Health."
+
+If Night Mode: Show a "Bounty Feed." Cards for "New Job: Synthwave Track ($500)," "GameForge Sprint Update."
+
+Screen 2: The "Scanner/Wallet" (Dual Interface)
+
+If Day Mode (Scanner): Open a camera view (mocked) to "Scan Receipt." Show a list of "Recent Expenses."
+
+If Night Mode (Wallet): Show a beautiful, animated "Digital ID Card" with a QR code and "Verified Architect" badge.
+
+Screen 3: Profile & Settings (The Toggle)
+
+Display user info (Avatar, Name, Role).
+
+The Magic Toggle: Add a button: "Switch View."
+
+Logic: Clicking this toggles the global state between Day and Night mode, instantly changing the theme colors, fonts, and bottom tab navigation.
+
+Implementation Steps:
+
+Set up the Expo Router structure (app/(tabs)/_layout.tsx).
+
+Create the useAppStore (Zustand) to hold mode: 'day' | 'night'.
+
+Create a ThemeContext or helper to swap colors based on the store.
+
+Build the screens with conditional rendering based on the mode.
+
+Ensure the "Switch View" button creates a smooth transition between the two worlds.
+
+Action: Generate the full project code, starting with the store, the layout, and the main screens.
