@@ -9,7 +9,7 @@ import {
   Alert,
 } from "react-native";
 import { router } from "expo-router";
-import { Shield, Zap, User, Lock } from "lucide-react-native";
+import { Shield, Zap, User, Lock, Building2, GraduationCap } from "lucide-react-native";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -18,10 +18,12 @@ import Animated, {
 import * as Haptics from "expo-haptics";
 import { useAppStore } from "@/store/appStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MarketContext } from "@/types/domain";
 
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedContext, setSelectedContext] = useState<MarketContext>("business");
   const { login } = useAppStore();
   const insets = useSafeAreaInsets();
 
@@ -36,7 +38,7 @@ export default function LoginScreen() {
 
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    const success = await login(username);
+    const success = await login(username, selectedContext);
 
     if (success) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -45,12 +47,41 @@ export default function LoginScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert(
         "Invalid Credentials",
-        "Use 'admin' for Day Mode or 'creator' for Night Mode"
+        selectedContext === "business"
+          ? "Use 'admin' for Day Mode or 'creator' for Night Mode"
+          : "Use 'teacher' for Day Mode or 'student' for Night Mode"
       );
     }
 
     setIsLoading(false);
   };
+
+  const contextOptions = [
+    {
+      id: "business" as MarketContext,
+      label: "Small Business",
+      icon: Building2,
+      color: "#3b82f6",
+      description: "Expenses, Approvals, Bounties",
+    },
+    {
+      id: "education" as MarketContext,
+      label: "K-12 Education",
+      icon: GraduationCap,
+      color: "#8b5cf6",
+      description: "Compliance, Rostering, Safety",
+    },
+  ];
+
+  const demoAccounts = selectedContext === "business"
+    ? [
+        { username: "admin", label: "Owner", mode: "Day Mode", color: "#3b82f6" },
+        { username: "creator", label: "Contractor", mode: "Night Mode", color: "#22c55e" },
+      ]
+    : [
+        { username: "teacher", label: "Teacher", mode: "Day Mode", color: "#3b82f6" },
+        { username: "student", label: "Student", mode: "Night Mode", color: "#22c55e" },
+      ];
 
   return (
     <KeyboardAvoidingView
@@ -74,7 +105,7 @@ export default function LoginScreen() {
         >
           <Animated.View
             entering={FadeInUp.delay(100).duration(600)}
-            style={{ alignItems: "center", marginBottom: 48 }}
+            style={{ alignItems: "center", marginBottom: 32 }}
           >
             <View
               style={{
@@ -106,8 +137,84 @@ export default function LoginScreen() {
                 textAlign: "center",
               }}
             >
-              Your portal to two worlds
+              Dual-mode compliance platform
             </Text>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.delay(150).duration(600)}
+            style={{ marginBottom: 20 }}
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                color: "#64748b",
+                marginBottom: 8,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+              }}
+            >
+              Select Mode
+            </Text>
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              {contextOptions.map((option) => (
+                <Pressable
+                  key={option.id}
+                  onPress={() => {
+                    setSelectedContext(option.id);
+                    setUsername("");
+                    Haptics.selectionAsync();
+                  }}
+                  style={{
+                    flex: 1,
+                    backgroundColor:
+                      selectedContext === option.id
+                        ? `${option.color}20`
+                        : "#1a1a24",
+                    borderWidth: 2,
+                    borderColor:
+                      selectedContext === option.id
+                        ? option.color
+                        : "#2d2d3a",
+                    borderRadius: 12,
+                    padding: 16,
+                    alignItems: "center",
+                  }}
+                >
+                  <option.icon
+                    size={24}
+                    color={
+                      selectedContext === option.id
+                        ? option.color
+                        : "#64748b"
+                    }
+                  />
+                  <Text
+                    style={{
+                      color:
+                        selectedContext === option.id
+                          ? option.color
+                          : "#94a3b8",
+                      fontWeight: "600",
+                      fontSize: 14,
+                      marginTop: 8,
+                    }}
+                  >
+                    {option.label}
+                  </Text>
+                  <Text
+                    style={{
+                      color: "#64748b",
+                      fontSize: 11,
+                      marginTop: 4,
+                      textAlign: "center",
+                    }}
+                  >
+                    {option.description}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
           </Animated.View>
 
           <Animated.View
@@ -204,7 +311,7 @@ export default function LoginScreen() {
           <Animated.View
             entering={FadeIn.delay(400).duration(600)}
             style={{
-              marginTop: 32,
+              marginTop: 24,
               padding: 16,
               backgroundColor: "#1a1a24",
               borderRadius: 12,
@@ -218,47 +325,34 @@ export default function LoginScreen() {
                 marginBottom: 12,
               }}
             >
-              Demo Accounts
+              Demo Accounts ({selectedContext === "business" ? "Business" : "Education"})
             </Text>
             <View style={{ flexDirection: "row", gap: 12 }}>
-              <Pressable
-                onPress={() => setUsername("admin")}
-                style={{
-                  flex: 1,
-                  backgroundColor: "#1e3a8a20",
-                  borderWidth: 1,
-                  borderColor: "#1e3a8a",
-                  borderRadius: 8,
-                  padding: 12,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ color: "#3b82f6", fontWeight: "600" }}>
-                  admin
-                </Text>
-                <Text style={{ color: "#64748b", fontSize: 12, marginTop: 4 }}>
-                  Day Mode
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setUsername("creator")}
-                style={{
-                  flex: 1,
-                  backgroundColor: "#22c55e20",
-                  borderWidth: 1,
-                  borderColor: "#22c55e",
-                  borderRadius: 8,
-                  padding: 12,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ color: "#22c55e", fontWeight: "600" }}>
-                  creator
-                </Text>
-                <Text style={{ color: "#64748b", fontSize: 12, marginTop: 4 }}>
-                  Night Mode
-                </Text>
-              </Pressable>
+              {demoAccounts.map((account) => (
+                <Pressable
+                  key={account.username}
+                  onPress={() => setUsername(account.username)}
+                  style={{
+                    flex: 1,
+                    backgroundColor: `${account.color}20`,
+                    borderWidth: 1,
+                    borderColor: account.color,
+                    borderRadius: 8,
+                    padding: 12,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ color: account.color, fontWeight: "600" }}>
+                    {account.username}
+                  </Text>
+                  <Text style={{ color: "#64748b", fontSize: 11, marginTop: 2 }}>
+                    {account.label}
+                  </Text>
+                  <Text style={{ color: "#64748b", fontSize: 10, marginTop: 2 }}>
+                    {account.mode}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
           </Animated.View>
         </View>

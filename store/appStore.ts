@@ -1,50 +1,76 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-export type AppMode = "day" | "night";
-
-interface User {
-  id: string;
-  username: string;
-  name: string;
-  role: string;
-  avatar: string;
-}
+import { 
+  MarketContext, 
+  AppMode, 
+  Member, 
+  Organization, 
+  LedgerItem, 
+  EngagementEvent,
+  AuditLogEntry,
+  SkillNode,
+  ChatMessage,
+  ComplianceCase 
+} from "../types/domain";
+import { configService, MarketConfiguration } from "../services/configurationService";
+import { complianceService } from "../services/complianceService";
+import { 
+  getMembersForContext, 
+  getLedgerItemsForContext, 
+  getOrganizationForContext,
+  getEventsForContext,
+  getAuditLogsForContext,
+  SKILL_NODES,
+  SAMPLE_CHAT_MESSAGES 
+} from "../services/mockData";
 
 interface AppState {
   mode: AppMode;
-  user: User | null;
+  marketContext: MarketContext;
+  currentMember: Member | null;
+  organization: Organization | null;
+  members: Member[];
+  ledgerItems: LedgerItem[];
+  events: EngagementEvent[];
+  auditLogs: AuditLogEntry[];
+  skillNodes: SkillNode[];
+  chatMessages: ChatMessage[];
+  complianceCases: ComplianceCase[];
   isAuthenticated: boolean;
   isLoading: boolean;
+  config: MarketConfiguration;
 
   setMode: (mode: AppMode) => void;
   toggleMode: () => void;
-  login: (username: string) => Promise<boolean>;
+  setMarketContext: (context: MarketContext) => void;
+  login: (username: string, context?: MarketContext) => Promise<boolean>;
   logout: () => void;
   loadSession: () => Promise<void>;
+  
+  sendChatMessage: (content: string, channelId: string) => ChatMessage;
+  addLedgerItem: (item: Omit<LedgerItem, "id" | "createdAt" | "updatedAt">) => void;
+  updateLedgerItemStatus: (id: string, status: LedgerItem["status"]) => void;
+  
+  getComplianceStats: () => { totalEvents: number; blockedCount: number; flaggedCount: number; openCases: number };
+  getMemberById: (id: string) => Member | undefined;
+  getTotalXP: () => number;
 }
-
-const DAY_USER: User = {
-  id: "1",
-  username: "admin",
-  name: "Sarah Mitchell",
-  role: "School Administrator",
-  avatar: "SM",
-};
-
-const NIGHT_USER: User = {
-  id: "2",
-  username: "creator",
-  name: "Alex Chen",
-  role: "Verified Architect",
-  avatar: "AC",
-};
 
 export const useAppStore = create<AppState>((set, get) => ({
   mode: "day",
-  user: null,
+  marketContext: "business",
+  currentMember: null,
+  organization: null,
+  members: [],
+  ledgerItems: [],
+  events: [],
+  auditLogs: [],
+  skillNodes: SKILL_NODES,
+  chatMessages: SAMPLE_CHAT_MESSAGES,
+  complianceCases: [],
   isAuthenticated: false,
   isLoading: true,
+  config: configService.getConfig(),
 
   setMode: (mode) => {
     set({ mode });
@@ -57,54 +83,135 @@ export const useAppStore = create<AppState>((set, get) => ({
     AsyncStorage.setItem("aethex_mode", newMode);
   },
 
-  login: async (username: string) => {
+  setMarketContext: (context) => {
+    configService.setMarketContext(context);
+    const config = configService.getConfig();
+    const organization = getOrganizationForContext(context);
+    const members = getMembersForContext(context);
+    const ledgerItems = getLedgerItemsForContext(context);
+    const events = getEventsForContext(context);
+    const auditLogs = getAuditLogsForContext(context);
+
+    set({ 
+      marketContext: context,
+      config,
+      organization,
+      members,
+      ledgerItems,
+      events,
+      auditLogs,
+    });
+    AsyncStorage.setItem("aethex_context", context);
+  },
+
+  login: async (username: string, context?: MarketContext) => {
     const normalizedUsername = username.toLowerCase().trim();
+    const marketContext = context || get().marketContext;
     
-    if (normalizedUsername === "admin") {
-      set({
-        user: DAY_USER,
-        mode: "day",
-        isAuthenticated: true,
-      });
-      await AsyncStorage.setItem("aethex_user", JSON.stringify(DAY_USER));
-      await AsyncStorage.setItem("aethex_mode", "day");
-      return true;
-    } else if (normalizedUsername === "creator") {
-      set({
-        user: NIGHT_USER,
-        mode: "night",
-        isAuthenticated: true,
-      });
-      await AsyncStorage.setItem("aethex_user", JSON.stringify(NIGHT_USER));
-      await AsyncStorage.setItem("aethex_mode", "night");
-      return true;
+    configService.setMarketContext(marketContext);
+    const config = configService.getConfig();
+    const organization = getOrganizationForContext(marketContext);
+    const members = getMembersForContext(marketContext);
+    const ledgerItems = getLedgerItemsForContext(marketContext);
+    const events = getEventsForContext(marketContext);
+    const auditLogs = getAuditLogsForContext(marketContext);
+
+    let currentMember: Member | null = null;
+    let mode: AppMode = "day";
+
+    if (marketContext === "business") {
+      if (normalizedUsername === "admin" || normalizedUsername === "owner") {
+        currentMember = members.find(m => m.role === "owner") || null;
+        mode = "day";
+      } else if (normalizedUsername === "creator" || normalizedUsername === "contractor") {
+        currentMember = members.find(m => m.role === "vendor" || m.role === "contractor") || members.find(m => m.role === "employee") || null;
+        mode = "night";
+      } else {
+        currentMember = members.find(m => m.name.toLowerCase().includes(normalizedUsername)) || null;
+        mode = currentMember?.role === "owner" || currentMember?.role === "manager" ? "day" : "night";
+      }
+    } else {
+      if (normalizedUsername === "admin" || normalizedUsername === "teacher") {
+        currentMember = members.find(m => m.role === "admin" || m.role === "teacher") || null;
+        mode = "day";
+      } else if (normalizedUsername === "student" || normalizedUsername === "creator") {
+        currentMember = members.find(m => m.role === "student") || null;
+        mode = "night";
+      } else {
+        currentMember = members.find(m => m.name.toLowerCase().includes(normalizedUsername)) || null;
+        mode = currentMember?.role === "admin" || currentMember?.role === "teacher" ? "day" : "night";
+      }
     }
-    
-    return false;
+
+    if (!currentMember) {
+      currentMember = members[0];
+      mode = config.roles.dayModeRoles.includes(currentMember.role) ? "day" : "night";
+    }
+
+    set({
+      currentMember,
+      mode,
+      marketContext,
+      config,
+      organization,
+      members,
+      ledgerItems,
+      events,
+      auditLogs,
+      isAuthenticated: true,
+    });
+
+    await AsyncStorage.setItem("aethex_member", JSON.stringify(currentMember));
+    await AsyncStorage.setItem("aethex_mode", mode);
+    await AsyncStorage.setItem("aethex_context", marketContext);
+
+    return true;
   },
 
   logout: () => {
     set({
-      user: null,
+      currentMember: null,
       isAuthenticated: false,
       mode: "day",
+      organization: null,
+      members: [],
+      ledgerItems: [],
+      events: [],
+      auditLogs: [],
     });
-    AsyncStorage.removeItem("aethex_user");
-    AsyncStorage.removeItem("aethex_mode");
+    AsyncStorage.multiRemove(["aethex_member", "aethex_mode", "aethex_context"]);
   },
 
   loadSession: async () => {
     try {
-      const [userJson, mode] = await Promise.all([
-        AsyncStorage.getItem("aethex_user"),
+      const [memberJson, mode, context] = await Promise.all([
+        AsyncStorage.getItem("aethex_member"),
         AsyncStorage.getItem("aethex_mode"),
+        AsyncStorage.getItem("aethex_context"),
       ]);
 
-      if (userJson) {
-        const user = JSON.parse(userJson);
+      if (memberJson) {
+        const member = JSON.parse(memberJson) as Member;
+        const marketContext = (context as MarketContext) || "business";
+        
+        configService.setMarketContext(marketContext);
+        const config = configService.getConfig();
+        const organization = getOrganizationForContext(marketContext);
+        const members = getMembersForContext(marketContext);
+        const ledgerItems = getLedgerItemsForContext(marketContext);
+        const events = getEventsForContext(marketContext);
+        const auditLogs = getAuditLogsForContext(marketContext);
+
         set({
-          user,
+          currentMember: member,
           mode: (mode as AppMode) || "day",
+          marketContext,
+          config,
+          organization,
+          members,
+          ledgerItems,
+          events,
+          auditLogs,
           isAuthenticated: true,
           isLoading: false,
         });
@@ -115,6 +222,73 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error("Error loading session:", error);
       set({ isLoading: false });
     }
+  },
+
+  sendChatMessage: (content: string, channelId: string) => {
+    const { currentMember, config } = get();
+    if (!currentMember) throw new Error("Not authenticated");
+
+    const rawMessage = {
+      id: `msg-${Date.now()}`,
+      senderId: currentMember.id,
+      senderName: currentMember.name,
+      channelId,
+      content,
+      timestamp: new Date().toISOString(),
+    };
+
+    const processedMessage = config.features.piiDetection 
+      ? complianceService.processMessage(rawMessage)
+      : { ...rawMessage, isBlocked: false, piiRedacted: false };
+
+    set(state => ({
+      chatMessages: [...state.chatMessages, processedMessage],
+    }));
+
+    return processedMessage;
+  },
+
+  addLedgerItem: (item) => {
+    const newItem: LedgerItem = {
+      ...item,
+      id: `ledger-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    set(state => ({
+      ledgerItems: [...state.ledgerItems, newItem],
+    }));
+  },
+
+  updateLedgerItemStatus: (id: string, status: LedgerItem["status"]) => {
+    set(state => ({
+      ledgerItems: state.ledgerItems.map(item =>
+        item.id === id ? { ...item, status, updatedAt: new Date().toISOString() } : item
+      ),
+    }));
+  },
+
+  getComplianceStats: () => {
+    const { auditLogs, complianceCases } = get();
+    return {
+      totalEvents: auditLogs.length,
+      blockedCount: auditLogs.filter(e => e.status === "BLOCKED").length,
+      flaggedCount: auditLogs.filter(e => e.flagged).length,
+      openCases: complianceCases.filter(c => c.status === "open" || c.status === "investigating").length,
+    };
+  },
+
+  getMemberById: (id: string) => {
+    return get().members.find(m => m.id === id);
+  },
+
+  getTotalXP: () => {
+    const { events, currentMember } = get();
+    if (!currentMember) return 0;
+    return events
+      .filter(e => e.memberId === currentMember.id && e.gamification.isUnlocked)
+      .reduce((total, e) => total + e.gamification.xp, 0);
   },
 }));
 
@@ -152,4 +326,14 @@ export const themes = {
 export const useTheme = () => {
   const mode = useAppStore((state) => state.mode);
   return themes[mode];
+};
+
+export const useTerminology = () => {
+  const config = useAppStore((state) => state.config);
+  return config.terminology;
+};
+
+export const useFeatures = () => {
+  const config = useAppStore((state) => state.config);
+  return config.features;
 };

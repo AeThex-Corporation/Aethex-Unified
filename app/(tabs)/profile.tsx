@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Switch, Alert, Platform } from "react-native";
+import { View, Text, ScrollView, Pressable, Alert, Platform } from "react-native";
 import {
   User,
   Moon,
@@ -10,12 +10,15 @@ import {
   HelpCircle,
   ChevronRight,
   Zap,
+  Building2,
+  GraduationCap,
+  Globe,
 } from "lucide-react-native";
 import Animated, { FadeInDown, FadeIn, ZoomIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { useAppStore, useTheme } from "@/store/appStore";
+import { useAppStore, useTheme, useTerminology } from "@/store/appStore";
 
 interface MenuItemProps {
   icon: React.ReactNode;
@@ -68,16 +71,18 @@ function MenuItem({ icon, title, subtitle, onPress, rightElement, delay }: MenuI
             </Text>
           )}
         </View>
-        {rightElement || <ChevronRight size={20} color={theme.textSecondary} />}
+        {rightElement !== null && (rightElement || <ChevronRight size={20} color={theme.textSecondary} />)}
       </Pressable>
     </Animated.View>
   );
 }
 
 export default function ProfileScreen() {
-  const { mode, user, toggleMode, logout } = useAppStore();
+  const { mode, currentMember, marketContext, organization, toggleMode, logout, getTotalXP } = useAppStore();
   const theme = useTheme();
+  const terminology = useTerminology();
   const insets = useSafeAreaInsets();
+  const totalXP = getTotalXP();
 
   const handleToggleMode = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -114,6 +119,9 @@ export default function ProfileScreen() {
     }
   };
 
+  const isEducation = marketContext === "education";
+  const avatar = currentMember?.avatar || currentMember?.name?.split(" ").map(n => n[0]).join("") || "??";
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.background }}
@@ -131,7 +139,7 @@ export default function ProfileScreen() {
             width: 100,
             height: 100,
             borderRadius: 50,
-            backgroundColor: mode === "day" ? "#1e3a8a" : "#22c55e",
+            backgroundColor: mode === "day" ? (isEducation ? "#8b5cf6" : "#1e3a8a") : "#22c55e",
             alignItems: "center",
             justifyContent: "center",
             marginBottom: 16,
@@ -144,25 +152,25 @@ export default function ProfileScreen() {
               color: mode === "day" ? "#ffffff" : "#0B0A0F",
             }}
           >
-            {user?.avatar || "??"}
+            {avatar}
           </Text>
         </View>
         <Text style={{ fontSize: 24, fontWeight: "700", color: theme.text }}>
-          {user?.name || "Unknown User"}
+          {currentMember?.name || "Unknown User"}
         </Text>
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
             marginTop: 8,
-            backgroundColor: mode === "day" ? "#1e3a8a20" : "#22c55e20",
+            backgroundColor: mode === "day" ? (isEducation ? "#8b5cf620" : "#1e3a8a20") : "#22c55e20",
             paddingHorizontal: 12,
             paddingVertical: 6,
             borderRadius: 20,
           }}
         >
           {mode === "day" ? (
-            <Shield size={14} color={theme.accent} />
+            isEducation ? <GraduationCap size={14} color={isEducation ? "#8b5cf6" : theme.accent} /> : <Shield size={14} color={theme.accent} />
           ) : (
             <Zap size={14} color={theme.accent} />
           )}
@@ -170,11 +178,80 @@ export default function ProfileScreen() {
             style={{
               fontSize: 14,
               fontWeight: "500",
-              color: theme.accent,
+              color: isEducation && mode === "day" ? "#8b5cf6" : theme.accent,
               marginLeft: 6,
+              textTransform: "capitalize",
             }}
           >
-            {user?.role || "User"}
+            {currentMember?.role || "User"}
+          </Text>
+        </View>
+
+        {mode === "night" && totalXP > 0 && (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginTop: 12,
+              backgroundColor: "#22c55e20",
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: "#22c55e40",
+            }}
+          >
+            <Zap size={16} color="#22c55e" />
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "700",
+                color: "#22c55e",
+                marginLeft: 6,
+              }}
+            >
+              {totalXP} XP
+            </Text>
+          </View>
+        )}
+      </Animated.View>
+
+      <Animated.View
+        entering={FadeIn.delay(100).duration(400)}
+        style={{
+          backgroundColor: isEducation ? "#8b5cf620" : "#1e3a8a20",
+          borderRadius: 16,
+          padding: 16,
+          marginBottom: 16,
+          borderWidth: 1,
+          borderColor: isEducation ? "#8b5cf640" : "#1e3a8a40",
+          flexDirection: "row",
+          alignItems: "center",
+        }}
+      >
+        {isEducation ? (
+          <GraduationCap size={20} color={isEducation ? "#8b5cf6" : theme.accent} />
+        ) : (
+          <Building2 size={20} color={theme.accent} />
+        )}
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <Text style={{ fontSize: 14, fontWeight: "600", color: theme.text }}>
+            {organization?.name || terminology.organization}
+          </Text>
+          <Text style={{ fontSize: 12, color: theme.textSecondary }}>
+            {isEducation ? "K-12 Education Mode" : "Small Business Mode"}
+          </Text>
+        </View>
+        <View
+          style={{
+            backgroundColor: isEducation ? "#8b5cf6" : "#1e3a8a",
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 4,
+          }}
+        >
+          <Text style={{ fontSize: 10, color: "#ffffff", fontWeight: "600" }}>
+            {organization?.tier?.toUpperCase() || "PRO"}
           </Text>
         </View>
       </Animated.View>
@@ -182,7 +259,7 @@ export default function ProfileScreen() {
       <Animated.View
         entering={FadeIn.delay(200).duration(400)}
         style={{
-          backgroundColor: mode === "day" ? "#1e3a8a" : "#22c55e",
+          backgroundColor: mode === "day" ? (isEducation ? "#8b5cf6" : "#1e3a8a") : "#22c55e",
           borderRadius: 20,
           padding: 20,
           marginBottom: 24,
@@ -211,7 +288,10 @@ export default function ProfileScreen() {
                   color: mode === "day" ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.6)",
                 }}
               >
-                {mode === "day" ? "Enterprise Interface" : "Creator Interface"}
+                {mode === "day" 
+                  ? (isEducation ? "Admin Interface" : "Enterprise Interface")
+                  : (isEducation ? "Student Interface" : "Creator Interface")
+                }
               </Text>
             </View>
           </View>
@@ -253,25 +333,25 @@ export default function ProfileScreen() {
       </Text>
 
       <MenuItem
-        icon={<Bell size={22} color={theme.accent} />}
+        icon={<Bell size={22} color={isEducation && mode === "day" ? "#8b5cf6" : theme.accent} />}
         title="Notifications"
         subtitle="Manage your alerts"
         delay={300}
       />
       <MenuItem
-        icon={<Settings size={22} color={theme.accent} />}
+        icon={<Settings size={22} color={isEducation && mode === "day" ? "#8b5cf6" : theme.accent} />}
         title="Preferences"
         subtitle="App settings and display"
         delay={350}
       />
       <MenuItem
-        icon={<Shield size={22} color={theme.accent} />}
-        title="Privacy & Security"
-        subtitle="Account protection"
+        icon={<Shield size={22} color={isEducation && mode === "day" ? "#8b5cf6" : theme.accent} />}
+        title={isEducation ? "Compliance Settings" : "Privacy & Security"}
+        subtitle={isEducation ? "FERPA and safety settings" : "Account protection"}
         delay={400}
       />
       <MenuItem
-        icon={<HelpCircle size={22} color={theme.accent} />}
+        icon={<HelpCircle size={22} color={isEducation && mode === "day" ? "#8b5cf6" : theme.accent} />}
         title="Help & Support"
         subtitle="Get help with the app"
         delay={450}
@@ -307,6 +387,9 @@ export default function ProfileScreen() {
       >
         <Text style={{ fontSize: 13, color: theme.textSecondary }}>
           AeThex Companion v1.0.0
+        </Text>
+        <Text style={{ fontSize: 11, color: theme.textSecondary, marginTop: 4 }}>
+          {isEducation ? "FERPA & COPPA Compliant" : "Enterprise Ready"}
         </Text>
       </Animated.View>
     </ScrollView>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, Alert } from "react-native";
 import {
   CheckCircle,
   XCircle,
@@ -11,11 +11,15 @@ import {
   Users,
   Hash,
   Plus,
+  AlertTriangle,
+  Shield,
+  BookOpen,
+  GraduationCap,
 } from "lucide-react-native";
 import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { useAppStore, useTheme } from "@/store/appStore";
+import { useAppStore, useTheme, useTerminology, useFeatures } from "@/store/appStore";
 
 interface ApprovalCardProps {
   title: string;
@@ -24,20 +28,27 @@ interface ApprovalCardProps {
   amount?: string;
   time: string;
   delay: number;
+  onApprove?: () => void;
+  onReject?: () => void;
 }
 
-function ApprovalCard({ title, requester, type, amount, time, delay }: ApprovalCardProps) {
+function ApprovalCard({ title, requester, type, amount, time, delay, onApprove, onReject }: ApprovalCardProps) {
   const theme = useTheme();
+  const { mode, marketContext } = useAppStore();
   const [status, setStatus] = useState<"pending" | "approved" | "rejected">("pending");
+  
+  const isEducation = marketContext === "education";
 
   const handleApprove = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setStatus("approved");
+    onApprove?.();
   };
 
   const handleReject = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     setStatus("rejected");
+    onReject?.();
   };
 
   if (status !== "pending") {
@@ -94,12 +105,16 @@ function ApprovalCard({ title, requester, type, amount, time, delay }: ApprovalC
               width: 44,
               height: 44,
               borderRadius: 12,
-              backgroundColor: "#1e3a8a20",
+              backgroundColor: isEducation ? "#8b5cf620" : "#1e3a8a20",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <FileText size={22} color="#1e3a8a" />
+            {isEducation ? (
+              <BookOpen size={22} color="#8b5cf6" />
+            ) : (
+              <FileText size={22} color="#1e3a8a" />
+            )}
           </View>
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={{ fontSize: 16, fontWeight: "600", color: theme.text }}>
@@ -113,7 +128,7 @@ function ApprovalCard({ title, requester, type, amount, time, delay }: ApprovalC
             </View>
           </View>
           {amount && (
-            <Text style={{ fontSize: 17, fontWeight: "700", color: "#1e3a8a" }}>
+            <Text style={{ fontSize: 17, fontWeight: "700", color: isEducation ? "#8b5cf6" : "#1e3a8a" }}>
               {amount}
             </Text>
           )}
@@ -193,8 +208,31 @@ function ApprovalCard({ title, requester, type, amount, time, delay }: ApprovalC
 function DayModeActions() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { marketContext, ledgerItems, updateLedgerItemStatus } = useAppStore();
+  const terminology = useTerminology();
+  
+  const isEducation = marketContext === "education";
 
-  const pendingApprovals = [
+  const pendingApprovals = isEducation ? [
+    {
+      title: "Student Data Export Request",
+      requester: "Maria Garcia",
+      type: "FERPA",
+      time: "1 hour ago",
+    },
+    {
+      title: "Guardian Access Change",
+      requester: "James Wilson",
+      type: "Parental Rights",
+      time: "3 hours ago",
+    },
+    {
+      title: "Grade Override Request",
+      requester: "Dr. Smith",
+      type: "Academic",
+      time: "Yesterday",
+    },
+  ] : [
     {
       title: "Expense Report - Q4",
       requester: "John Smith",
@@ -225,23 +263,27 @@ function DayModeActions() {
       <Animated.View entering={FadeInDown.duration(400)}>
         <View
           style={{
-            backgroundColor: "#fef3c7",
+            backgroundColor: isEducation ? "#ede9fe" : "#fef3c7",
             borderRadius: 16,
             padding: 16,
             marginBottom: 20,
             borderWidth: 1,
-            borderColor: "#fcd34d",
+            borderColor: isEducation ? "#c4b5fd" : "#fcd34d",
             flexDirection: "row",
             alignItems: "center",
           }}
         >
-          <Clock size={24} color="#f59e0b" />
+          {isEducation ? (
+            <Shield size={24} color="#8b5cf6" />
+          ) : (
+            <Clock size={24} color="#f59e0b" />
+          )}
           <View style={{ marginLeft: 12 }}>
-            <Text style={{ fontSize: 16, fontWeight: "600", color: "#92400e" }}>
-              {pendingApprovals.length} Pending Approvals
+            <Text style={{ fontSize: 16, fontWeight: "600", color: isEducation ? "#5b21b6" : "#92400e" }}>
+              {pendingApprovals.length} Pending {terminology.approval}s
             </Text>
-            <Text style={{ fontSize: 13, color: "#a16207" }}>
-              Requires your attention
+            <Text style={{ fontSize: 13, color: isEducation ? "#7c3aed" : "#a16207" }}>
+              {isEducation ? "Compliance review required" : "Requires your attention"}
             </Text>
           </View>
         </View>
@@ -261,21 +303,56 @@ function DayModeActions() {
 function NightModeGuild() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { marketContext, sendChatMessage, chatMessages } = useAppStore();
+  const features = useFeatures();
   const [message, setMessage] = useState("");
+  const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
 
-  const channels = [
+  const isEducation = marketContext === "education";
+
+  const channels = isEducation ? [
+    { name: "study-group", unread: 5 },
+    { name: "homework-help", unread: 2 },
+    { name: "announcements", unread: 0 },
+  ] : [
     { name: "general", unread: 3 },
     { name: "bounty-hunters", unread: 12 },
     { name: "web3-devs", unread: 0 },
   ];
 
-  const messages = [
+  const sampleMessages = isEducation ? [
+    {
+      user: "StudyBuddy",
+      avatar: "SB",
+      message: "Anyone working on the math homework?",
+      time: "2m",
+      color: "#8b5cf6",
+      isBlocked: false,
+    },
+    {
+      user: "BookWorm",
+      avatar: "BW",
+      message: "Just finished the reading assignment!",
+      time: "5m",
+      color: "#ec4899",
+      isBlocked: false,
+    },
+    {
+      user: "ScienceKid",
+      avatar: "SK",
+      message: "The lab report is taking forever",
+      time: "12m",
+      color: "#22c55e",
+      isBlocked: false,
+    },
+  ] : [
     {
       user: "CryptoKnight",
       avatar: "CK",
       message: "Anyone working on the GameForge bounty?",
       time: "2m",
       color: "#8b5cf6",
+      isBlocked: false,
     },
     {
       user: "SynthMaster",
@@ -283,6 +360,7 @@ function NightModeGuild() {
       message: "Just submitted the audio tracks! Waiting for review.",
       time: "5m",
       color: "#ec4899",
+      isBlocked: false,
     },
     {
       user: "CodeNinja",
@@ -290,15 +368,37 @@ function NightModeGuild() {
       message: "The smart contract audit is taking longer than expected",
       time: "12m",
       color: "#22c55e",
+      isBlocked: false,
     },
     {
       user: "PixelArtist",
       avatar: "PA",
-      message: "New NFT collection dropping soon! ",
+      message: "New NFT collection dropping soon!",
       time: "1h",
       color: "#f59e0b",
+      isBlocked: false,
     },
   ];
+
+  const handleSendMessage = () => {
+    if (!message.trim()) return;
+
+    const result = sendChatMessage(message, isEducation ? "study-group" : "bounty-hunters");
+    
+    if (result.isBlocked) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setBlockedMessage("Message blocked: Contains personal information that cannot be shared.");
+      setTimeout(() => setBlockedMessage(null), 3000);
+    } else if (result.piiRedacted) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      setBlockedMessage("Some personal information was automatically hidden for your safety.");
+      setTimeout(() => setBlockedMessage(null), 3000);
+    } else {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    
+    setMessage("");
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
@@ -323,16 +423,20 @@ function NightModeGuild() {
                   width: 50,
                   height: 50,
                   borderRadius: 12,
-                  backgroundColor: index === 1 ? "#22c55e20" : "#1a1a24",
+                  backgroundColor: index === 0 ? "#22c55e20" : "#1a1a24",
                   alignItems: "center",
                   justifyContent: "center",
                   marginBottom: 8,
-                  borderWidth: index === 1 ? 2 : 0,
+                  borderWidth: index === 0 ? 2 : 0,
                   borderColor: "#22c55e",
                   opacity: pressed ? 0.8 : 1,
                 })}
               >
-                <Hash size={20} color={index === 1 ? "#22c55e" : theme.textSecondary} />
+                {isEducation ? (
+                  <GraduationCap size={20} color={index === 0 ? "#22c55e" : theme.textSecondary} />
+                ) : (
+                  <Hash size={20} color={index === 0 ? "#22c55e" : theme.textSecondary} />
+                )}
                 {channel.unread > 0 && (
                   <View
                     style={{
@@ -384,9 +488,13 @@ function NightModeGuild() {
               alignItems: "center",
             }}
           >
-            <Hash size={18} color="#22c55e" />
+            {isEducation ? (
+              <GraduationCap size={18} color="#22c55e" />
+            ) : (
+              <Hash size={18} color="#22c55e" />
+            )}
             <Text style={{ fontSize: 16, fontWeight: "600", color: theme.text, marginLeft: 8 }}>
-              bounty-hunters
+              {isEducation ? "study-group" : "bounty-hunters"}
             </Text>
             <View
               style={{
@@ -397,16 +505,33 @@ function NightModeGuild() {
             >
               <Users size={16} color={theme.textSecondary} />
               <Text style={{ fontSize: 13, color: theme.textSecondary, marginLeft: 4 }}>
-                247 online
+                {isEducation ? "24 members" : "247 online"}
               </Text>
             </View>
           </View>
+
+          {features.piiDetection && (
+            <View
+              style={{
+                backgroundColor: "#22c55e10",
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <Shield size={14} color="#22c55e" />
+              <Text style={{ fontSize: 12, color: "#22c55e", marginLeft: 6 }}>
+                {isEducation ? "Student safety protection active" : "PII protection active"}
+              </Text>
+            </View>
+          )}
 
           <ScrollView
             style={{ flex: 1 }}
             contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
           >
-            {messages.map((msg, index) => (
+            {sampleMessages.map((msg, index) => (
               <Animated.View
                 key={index}
                 entering={FadeInDown.delay(100 + index * 50).duration(400)}
@@ -415,6 +540,7 @@ function NightModeGuild() {
                   style={{
                     flexDirection: "row",
                     marginBottom: 16,
+                    opacity: msg.isBlocked ? 0.5 : 1,
                   }}
                 >
                   <View
@@ -447,13 +573,35 @@ function NightModeGuild() {
                       </Text>
                     </View>
                     <Text style={{ fontSize: 14, color: theme.text, marginTop: 4 }}>
-                      {msg.message}
+                      {msg.isBlocked ? "[Message blocked for safety]" : msg.message}
                     </Text>
                   </View>
                 </View>
               </Animated.View>
             ))}
           </ScrollView>
+
+          {blockedMessage && (
+            <Animated.View
+              entering={FadeIn.duration(200)}
+              style={{
+                position: "absolute",
+                bottom: insets.bottom + 70,
+                left: 12,
+                right: 12,
+                backgroundColor: "#ef4444",
+                borderRadius: 12,
+                padding: 12,
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <AlertTriangle size={18} color="#ffffff" />
+              <Text style={{ fontSize: 13, color: "#ffffff", marginLeft: 8, flex: 1 }}>
+                {blockedMessage}
+              </Text>
+            </Animated.View>
+          )}
 
           <View
             style={{
@@ -476,11 +624,13 @@ function NightModeGuild() {
               <TextInput
                 value={message}
                 onChangeText={setMessage}
-                placeholder="Message #bounty-hunters"
+                placeholder={`Message #${isEducation ? "study-group" : "bounty-hunters"}`}
                 placeholderTextColor="#64748b"
                 style={{ flex: 1, fontSize: 15, color: theme.text }}
+                onSubmitEditing={handleSendMessage}
               />
               <Pressable
+                onPress={handleSendMessage}
                 style={{
                   width: 36,
                   height: 36,
