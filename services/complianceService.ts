@@ -7,6 +7,7 @@ import {
   ChatMessage 
 } from "../types/domain";
 import { configService } from "./configurationService";
+import { databaseService } from "./databaseService";
 
 interface PIIPattern {
   name: string;
@@ -146,7 +147,6 @@ class ComplianceService {
 
     if (allFlags.length > 0) {
       this.logAuditEntry({
-        id: `audit-${Date.now()}`,
         organizationId: "org-1",
         memberId: message.senderId,
         timestamp: new Date().toISOString(),
@@ -163,10 +163,17 @@ class ComplianceService {
     return processedMessage;
   }
 
-  logAuditEntry(entry: AuditLogEntry): void {
-    this.auditLog.unshift(entry);
+  async logAuditEntry(entry: Omit<AuditLogEntry, 'id'>): Promise<void> {
+    const newEntry: AuditLogEntry = { ...entry, id: `audit-${Date.now()}` };
+    this.auditLog.unshift(newEntry);
     if (this.auditLog.length > 1000) {
       this.auditLog = this.auditLog.slice(0, 1000);
+    }
+    
+    try {
+      await databaseService.auditLogs.create(entry);
+    } catch (error) {
+      console.warn('Failed to persist audit log to database:', error);
     }
   }
 

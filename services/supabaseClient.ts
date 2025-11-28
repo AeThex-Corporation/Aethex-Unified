@@ -1,23 +1,48 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || Constants.expoConfig?.extra?.supabaseUrl || '';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || Constants.expoConfig?.extra?.supabaseAnonKey || '';
+const supabaseUrl = 
+  process.env.EXPO_PUBLIC_SUPABASE_URL || 
+  process.env.SUPABASE_URL || 
+  Constants.expoConfig?.extra?.supabaseUrl || 
+  '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
+const supabaseAnonKey = 
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 
+  process.env.SUPABASE_ANON_KEY || 
+  Constants.expoConfig?.extra?.supabaseAnonKey || 
+  '';
+
+const hasCredentials = Boolean(supabaseUrl && supabaseAnonKey);
+
+if (!hasCredentials) {
   console.warn('Supabase credentials not found. Using mock data mode.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
+const createSupabaseClient = (): SupabaseClient | null => {
+  if (!hasCredentials) {
+    return null;
+  }
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      storage: AsyncStorage,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+    },
+  });
+};
 
-export const isSupabaseConfigured = () => {
-  return Boolean(supabaseUrl && supabaseAnonKey);
+export const supabase = createSupabaseClient();
+
+export const isSupabaseConfigured = (): boolean => {
+  return hasCredentials && supabase !== null;
+};
+
+export const getSupabaseClient = () => {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase is not configured');
+  }
+  return supabase!;
 };

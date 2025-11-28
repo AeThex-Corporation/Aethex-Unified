@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { supabase, isSupabaseConfigured, getSupabaseClient } from './supabaseClient';
 import type { 
   Member, 
   Organization, 
@@ -47,6 +47,11 @@ export interface DatabaseService {
     sendMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => Promise<ChatMessage>;
     subscribeToChannel: (channelId: string, callback: (message: ChatMessage) => void) => () => void;
   };
+  auditLogs: {
+    create: (entry: Omit<AuditLogEntry, 'id'>) => Promise<AuditLogEntry>;
+    getByOrg: (orgId: string, limit?: number) => Promise<AuditLogEntry[]>;
+    getByMember: (memberId: string, limit?: number) => Promise<AuditLogEntry[]>;
+  };
   auth: {
     signIn: (email: string, password: string) => Promise<{ user: any; error: any }>;
     signUp: (email: string, password: string, metadata?: any) => Promise<{ user: any; error: any }>;
@@ -63,7 +68,7 @@ export const databaseService: DatabaseService = {
         const allMembers = [...BUSINESS_MEMBERS, ...EDUCATION_MEMBERS];
         return allMembers.find(m => m.id === id) || null;
       }
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('members')
         .select('*')
         .eq('id', id)
@@ -81,7 +86,7 @@ export const databaseService: DatabaseService = {
         if (orgId.includes('edu')) return EDUCATION_MEMBERS;
         return [...BUSINESS_MEMBERS, ...EDUCATION_MEMBERS].filter(m => m.organizationId === orgId);
       }
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('members')
         .select('*')
         .eq('organization_id', orgId);
@@ -95,7 +100,7 @@ export const databaseService: DatabaseService = {
     },
     upsert: async (member: Member) => {
       if (!isSupabaseConfigured()) return member;
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('members')
         .upsert(member)
         .select()
@@ -114,7 +119,7 @@ export const databaseService: DatabaseService = {
         if (id.includes('edu')) return EDUCATION_ORGANIZATION;
         return null;
       }
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('organizations')
         .select('*')
         .eq('id', id)
@@ -131,7 +136,7 @@ export const databaseService: DatabaseService = {
       if (!isSupabaseConfigured()) {
         return [BUSINESS_ORGANIZATION, EDUCATION_ORGANIZATION];
       }
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('organizations')
         .select('*');
       if (error) {
@@ -147,7 +152,7 @@ export const databaseService: DatabaseService = {
         const allItems = [...BUSINESS_LEDGER_ITEMS, ...EDUCATION_LEDGER_ITEMS];
         return allItems.filter(item => item.memberId === memberId);
       }
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('ledger_items')
         .select('*')
         .eq('member_id', memberId)
@@ -165,7 +170,7 @@ export const databaseService: DatabaseService = {
         if (orgId.includes('edu')) return EDUCATION_LEDGER_ITEMS;
         return [];
       }
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('ledger_items')
         .select('*')
         .eq('organization_id', orgId)
@@ -182,7 +187,7 @@ export const databaseService: DatabaseService = {
       if (!isSupabaseConfigured()) {
         return { ...item, id: `temp-${Date.now()}` } as LedgerItem;
       }
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('ledger_items')
         .insert(item)
         .select()
@@ -195,7 +200,7 @@ export const databaseService: DatabaseService = {
     },
     updateStatus: async (id: string, status: LedgerItem['status']) => {
       if (!isSupabaseConfigured()) return;
-      const { error } = await supabase
+      const { error } = await getSupabaseClient()
         .from('ledger_items')
         .update({ status, updated_at: new Date().toISOString() })
         .eq('id', id);
@@ -210,7 +215,7 @@ export const databaseService: DatabaseService = {
       if (!isSupabaseConfigured()) {
         return DUAL_EVENTS.filter(e => e.memberId === memberId);
       }
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('engagement_events')
         .select('*')
         .eq('member_id', memberId)
@@ -225,7 +230,7 @@ export const databaseService: DatabaseService = {
       if (!isSupabaseConfigured()) {
         return { ...event, id: `temp-${Date.now()}` } as EngagementEvent;
       }
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('engagement_events')
         .insert(event)
         .select()
@@ -242,7 +247,7 @@ export const databaseService: DatabaseService = {
       if (!isSupabaseConfigured()) {
         return SAMPLE_CHAT_MESSAGES.filter(m => m.channelId === channelId).slice(-limit);
       }
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('chat_messages')
         .select('*')
         .eq('channel_id', channelId)
@@ -262,7 +267,7 @@ export const databaseService: DatabaseService = {
           timestamp: new Date().toISOString() 
         } as ChatMessage;
       }
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('chat_messages')
         .insert({
           sender_id: message.senderId,
@@ -293,7 +298,7 @@ export const databaseService: DatabaseService = {
       } as ChatMessage;
     },
     subscribeToChannel: (channelId: string, callback: (message: ChatMessage) => void) => {
-      if (!isSupabaseConfigured()) return () => {};
+      if (!isSupabaseConfigured() || !supabase) return () => {};
       const subscription = supabase
         .channel(`chat:${channelId}`)
         .on(
@@ -325,22 +330,134 @@ export const databaseService: DatabaseService = {
       };
     },
   },
+  auditLogs: {
+    create: async (entry: Omit<AuditLogEntry, 'id'>) => {
+      const newEntry: AuditLogEntry = {
+        ...entry,
+        id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      };
+      if (!isSupabaseConfigured() || !supabase) {
+        return newEntry;
+      }
+      const { data, error } = await getSupabaseClient()
+        .from('audit_logs')
+        .insert({
+          organization_id: entry.organizationId,
+          member_id: entry.memberId,
+          timestamp: entry.timestamp,
+          action: entry.action,
+          resource: entry.resource,
+          resource_id: entry.resourceId,
+          status: entry.status,
+          risk_level: entry.riskLevel,
+          flagged: entry.flagged,
+          trigger: entry.trigger,
+          ip_address: entry.ipAddress,
+          user_agent: entry.userAgent,
+          metadata: entry.metadata,
+        })
+        .select()
+        .single();
+      if (error) {
+        console.error('Error creating audit log:', error);
+        return newEntry;
+      }
+      return {
+        id: data.id,
+        organizationId: data.organization_id,
+        memberId: data.member_id,
+        timestamp: data.timestamp,
+        action: data.action,
+        resource: data.resource,
+        resourceId: data.resource_id,
+        status: data.status,
+        riskLevel: data.risk_level,
+        flagged: data.flagged,
+        trigger: data.trigger,
+        ipAddress: data.ip_address,
+        userAgent: data.user_agent,
+        metadata: data.metadata,
+      } as AuditLogEntry;
+    },
+    getByOrg: async (orgId: string, limit = 100) => {
+      if (!isSupabaseConfigured()) {
+        return [];
+      }
+      const { data, error } = await getSupabaseClient()
+        .from('audit_logs')
+        .select('*')
+        .eq('organization_id', orgId)
+        .order('timestamp', { ascending: false })
+        .limit(limit);
+      if (error) {
+        console.error('Error fetching audit logs:', error);
+        return [];
+      }
+      return data.map((d: any) => ({
+        id: d.id,
+        organizationId: d.organization_id,
+        memberId: d.member_id,
+        timestamp: d.timestamp,
+        action: d.action,
+        resource: d.resource,
+        resourceId: d.resource_id,
+        status: d.status,
+        riskLevel: d.risk_level,
+        flagged: d.flagged,
+        trigger: d.trigger,
+        ipAddress: d.ip_address,
+        userAgent: d.user_agent,
+        metadata: d.metadata,
+      })) as AuditLogEntry[];
+    },
+    getByMember: async (memberId: string, limit = 100) => {
+      if (!isSupabaseConfigured()) {
+        return [];
+      }
+      const { data, error } = await getSupabaseClient()
+        .from('audit_logs')
+        .select('*')
+        .eq('member_id', memberId)
+        .order('timestamp', { ascending: false })
+        .limit(limit);
+      if (error) {
+        console.error('Error fetching audit logs:', error);
+        return [];
+      }
+      return data.map((d: any) => ({
+        id: d.id,
+        organizationId: d.organization_id,
+        memberId: d.member_id,
+        timestamp: d.timestamp,
+        action: d.action,
+        resource: d.resource,
+        resourceId: d.resource_id,
+        status: d.status,
+        riskLevel: d.risk_level,
+        flagged: d.flagged,
+        trigger: d.trigger,
+        ipAddress: d.ip_address,
+        userAgent: d.user_agent,
+        metadata: d.metadata,
+      })) as AuditLogEntry[];
+    },
+  },
   auth: {
     signIn: async (email: string, password: string) => {
-      if (!isSupabaseConfigured()) {
+      if (!isSupabaseConfigured() || !supabase) {
         return { user: null, error: { message: 'Supabase not configured' } };
       }
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await getSupabaseClient().auth.signInWithPassword({
         email,
         password,
       });
       return { user: data?.user, error };
     },
     signUp: async (email: string, password: string, metadata?: any) => {
-      if (!isSupabaseConfigured()) {
+      if (!isSupabaseConfigured() || !supabase) {
         return { user: null, error: { message: 'Supabase not configured' } };
       }
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await getSupabaseClient().auth.signUp({
         email,
         password,
         options: {
@@ -350,16 +467,16 @@ export const databaseService: DatabaseService = {
       return { user: data?.user, error };
     },
     signOut: async () => {
-      if (!isSupabaseConfigured()) return;
-      await supabase.auth.signOut();
+      if (!isSupabaseConfigured() || !supabase) return;
+      await getSupabaseClient().auth.signOut();
     },
     getSession: async () => {
-      if (!isSupabaseConfigured()) return null;
-      const { data } = await supabase.auth.getSession();
+      if (!isSupabaseConfigured() || !supabase) return null;
+      const { data } = await getSupabaseClient().auth.getSession();
       return data?.session;
     },
     onAuthStateChange: (callback: (event: string, session: any) => void) => {
-      if (!isSupabaseConfigured()) return () => {};
+      if (!isSupabaseConfigured() || !supabase) return () => {};
       const { data } = supabase.auth.onAuthStateChange(callback);
       return () => {
         data?.subscription?.unsubscribe();
