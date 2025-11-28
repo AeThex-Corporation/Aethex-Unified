@@ -303,87 +303,66 @@ function DayModeActions() {
 function NightModeGuild() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { marketContext, sendChatMessage, chatMessages } = useAppStore();
+  const { marketContext, sendChatMessage, chatMessages, currentMember } = useAppStore();
   const features = useFeatures();
   const [message, setMessage] = useState("");
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
+  const [selectedChannel, setSelectedChannel] = useState(0);
 
   const isEducation = marketContext === "education";
 
   const channels = isEducation ? [
-    { name: "study-group", unread: 5 },
-    { name: "homework-help", unread: 2 },
-    { name: "announcements", unread: 0 },
+    { name: "study-group", id: "study-group", unread: 5 },
+    { name: "homework-help", id: "homework-help", unread: 2 },
+    { name: "announcements", id: "announcements", unread: 0 },
   ] : [
-    { name: "general", unread: 3 },
-    { name: "bounty-hunters", unread: 12 },
-    { name: "web3-devs", unread: 0 },
+    { name: "general", id: "general", unread: 3 },
+    { name: "bounty-hunters", id: "bounty-hunters", unread: 12 },
+    { name: "web3-devs", id: "web3-devs", unread: 0 },
   ];
 
+  const currentChannelId = channels[selectedChannel].id;
+
   const sampleMessages = isEducation ? [
-    {
-      user: "StudyBuddy",
-      avatar: "SB",
-      message: "Anyone working on the math homework?",
-      time: "2m",
-      color: "#8b5cf6",
-      isBlocked: false,
-    },
-    {
-      user: "BookWorm",
-      avatar: "BW",
-      message: "Just finished the reading assignment!",
-      time: "5m",
-      color: "#ec4899",
-      isBlocked: false,
-    },
-    {
-      user: "ScienceKid",
-      avatar: "SK",
-      message: "The lab report is taking forever",
-      time: "12m",
-      color: "#22c55e",
-      isBlocked: false,
-    },
+    { user: "StudyBuddy", avatar: "SB", message: "Anyone working on the math homework?", time: "2m", color: "#8b5cf6", isBlocked: false, senderId: "sample-1" },
+    { user: "BookWorm", avatar: "BW", message: "Just finished the reading assignment!", time: "5m", color: "#ec4899", isBlocked: false, senderId: "sample-2" },
+    { user: "ScienceKid", avatar: "SK", message: "The lab report is taking forever", time: "12m", color: "#22c55e", isBlocked: false, senderId: "sample-3" },
   ] : [
-    {
-      user: "CryptoKnight",
-      avatar: "CK",
-      message: "Anyone working on the GameForge bounty?",
-      time: "2m",
-      color: "#8b5cf6",
-      isBlocked: false,
-    },
-    {
-      user: "SynthMaster",
-      avatar: "SM",
-      message: "Just submitted the audio tracks! Waiting for review.",
-      time: "5m",
-      color: "#ec4899",
-      isBlocked: false,
-    },
-    {
-      user: "CodeNinja",
-      avatar: "CN",
-      message: "The smart contract audit is taking longer than expected",
-      time: "12m",
-      color: "#22c55e",
-      isBlocked: false,
-    },
-    {
-      user: "PixelArtist",
-      avatar: "PA",
-      message: "New NFT collection dropping soon!",
-      time: "1h",
-      color: "#f59e0b",
-      isBlocked: false,
-    },
+    { user: "CryptoKnight", avatar: "CK", message: "Anyone working on the GameForge bounty?", time: "2m", color: "#8b5cf6", isBlocked: false, senderId: "sample-1" },
+    { user: "SynthMaster", avatar: "SM", message: "Just submitted the audio tracks! Waiting for review.", time: "5m", color: "#ec4899", isBlocked: false, senderId: "sample-2" },
+    { user: "CodeNinja", avatar: "CN", message: "The smart contract audit is taking longer than expected", time: "12m", color: "#22c55e", isBlocked: false, senderId: "sample-3" },
+    { user: "PixelArtist", avatar: "PA", message: "New NFT collection dropping soon!", time: "1h", color: "#f59e0b", isBlocked: false, senderId: "sample-4" },
   ];
+
+  const channelMessages = chatMessages.filter(m => m.channelId === currentChannelId);
+  const userColors = ["#8b5cf6", "#ec4899", "#22c55e", "#f59e0b", "#3b82f6", "#ef4444"];
+  
+  const formatTime = (timestamp: string) => {
+    const diff = Date.now() - new Date(timestamp).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "now";
+    if (mins < 60) return `${mins}m`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h`;
+    return `${Math.floor(hours / 24)}d`;
+  };
+
+  const storeMessages = channelMessages.map((msg, index) => ({
+    user: msg.senderName,
+    avatar: msg.senderName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase(),
+    message: msg.piiRedacted && msg.redactedContent ? msg.redactedContent : msg.content,
+    time: formatTime(msg.timestamp),
+    color: userColors[index % userColors.length],
+    isBlocked: msg.isBlocked || false,
+    senderId: msg.senderId,
+  }));
+
+  const displayMessages = [...sampleMessages, ...storeMessages];
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
 
-    const result = sendChatMessage(message, isEducation ? "study-group" : "bounty-hunters");
+    const result = sendChatMessage(message, currentChannelId);
     
     if (result.isBlocked) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -419,23 +398,24 @@ function NightModeGuild() {
               entering={FadeIn.delay(index * 100).duration(300)}
             >
               <Pressable
+                onPress={() => setSelectedChannel(index)}
                 style={({ pressed }) => ({
                   width: 50,
                   height: 50,
                   borderRadius: 12,
-                  backgroundColor: index === 0 ? "#22c55e20" : "#1a1a24",
+                  backgroundColor: index === selectedChannel ? "#22c55e20" : "#1a1a24",
                   alignItems: "center",
                   justifyContent: "center",
                   marginBottom: 8,
-                  borderWidth: index === 0 ? 2 : 0,
+                  borderWidth: index === selectedChannel ? 2 : 0,
                   borderColor: "#22c55e",
                   opacity: pressed ? 0.8 : 1,
                 })}
               >
                 {isEducation ? (
-                  <GraduationCap size={20} color={index === 0 ? "#22c55e" : theme.textSecondary} />
+                  <GraduationCap size={20} color={index === selectedChannel ? "#22c55e" : theme.textSecondary} />
                 ) : (
-                  <Hash size={20} color={index === 0 ? "#22c55e" : theme.textSecondary} />
+                  <Hash size={20} color={index === selectedChannel ? "#22c55e" : theme.textSecondary} />
                 )}
                 {channel.unread > 0 && (
                   <View
@@ -494,7 +474,7 @@ function NightModeGuild() {
               <Hash size={18} color="#22c55e" />
             )}
             <Text style={{ fontSize: 16, fontWeight: "600", color: theme.text, marginLeft: 8 }}>
-              {isEducation ? "study-group" : "bounty-hunters"}
+              {channels[selectedChannel].name}
             </Text>
             <View
               style={{
@@ -531,9 +511,9 @@ function NightModeGuild() {
             style={{ flex: 1 }}
             contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
           >
-            {sampleMessages.map((msg, index) => (
+            {displayMessages.map((msg, index) => (
               <Animated.View
-                key={index}
+                key={`${msg.senderId}-${index}`}
                 entering={FadeInDown.delay(100 + index * 50).duration(400)}
               >
                 <View
@@ -624,7 +604,7 @@ function NightModeGuild() {
               <TextInput
                 value={message}
                 onChangeText={setMessage}
-                placeholder={`Message #${isEducation ? "study-group" : "bounty-hunters"}`}
+                placeholder={`Message #${channels[selectedChannel].name}`}
                 placeholderTextColor="#64748b"
                 style={{ flex: 1, fontSize: 15, color: theme.text }}
                 onSubmitEditing={handleSendMessage}

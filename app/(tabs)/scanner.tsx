@@ -4,33 +4,21 @@ import {
   Camera,
   Receipt,
   Clock,
-  DollarSign,
   QrCode,
-  Shield,
-  CheckCircle,
-  Star,
-  Award,
   BookOpen,
-  Zap,
-  Trophy,
-  Target,
 } from "lucide-react-native";
 import Animated, {
   FadeIn,
   FadeInDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAppStore, useTheme, useTerminology, useFeatures } from "@/store/appStore";
+import { useAppStore, useTheme, useTerminology } from "@/store/appStore";
+import { EnhancedPassport } from "@/components/EnhancedPassport";
 
 function DayModeScanner() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { marketContext, ledgerItems } = useAppStore();
+  const { marketContext } = useAppStore();
   const terminology = useTerminology();
   const [isScanning, setIsScanning] = useState(false);
 
@@ -225,41 +213,7 @@ function DayModeScanner() {
 
 function NightModeWallet() {
   const theme = useTheme();
-  const { currentMember, marketContext, getTotalXP, skillNodes, events } = useAppStore();
-  const features = useFeatures();
   const insets = useSafeAreaInsets();
-  
-  const glowOpacity = useSharedValue(0.5);
-  const isEducation = marketContext === "education";
-  const totalXP = getTotalXP();
-  const unlockedSkills = skillNodes.filter(s => s.isUnlocked).length;
-
-  useEffect(() => {
-    glowOpacity.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1500 }),
-        withTiming(0.5, { duration: 1500 })
-      ),
-      -1,
-      true
-    );
-  }, []);
-
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: glowOpacity.value,
-  }));
-
-  const avatar = currentMember?.avatar || currentMember?.name?.split(" ").map(n => n[0]).join("") || "??";
-
-  const achievements = isEducation ? [
-    { icon: BookOpen, label: "Fast Learner", color: "#8b5cf6" },
-    { icon: Trophy, label: "Top Student", color: "#f59e0b" },
-    { icon: Target, label: "Goal Setter", color: "#22c55e" },
-  ] : [
-    { icon: Star, label: "First Bounty", color: "#f59e0b" },
-    { icon: Award, label: "Top Earner", color: "#8b5cf6" },
-    { icon: Shield, label: "Trusted", color: "#22c55e" },
-  ];
 
   return (
     <ScrollView
@@ -267,249 +221,10 @@ function NightModeWallet() {
       contentContainerStyle={{
         padding: 20,
         paddingBottom: insets.bottom + 100,
-        alignItems: "center",
       }}
     >
-      <Animated.View
-        entering={FadeIn.duration(600)}
-        style={{ width: "100%", alignItems: "center" }}
-      >
-        <Animated.View
-          style={[
-            {
-              position: "absolute",
-              width: 320,
-              height: 200,
-              borderRadius: 24,
-              backgroundColor: "#22c55e",
-              top: 20,
-            },
-            glowStyle,
-          ]}
-        />
-
-        <View
-          style={{
-            width: "100%",
-            maxWidth: 340,
-            backgroundColor: "#1a1a24",
-            borderRadius: 24,
-            padding: 24,
-            borderWidth: 2,
-            borderColor: "#22c55e",
-            marginTop: 30,
-          }}
-        >
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 20 }}>
-            <View>
-              <Text style={{ fontSize: 12, color: theme.textSecondary }}>
-                {isEducation ? "STUDENT PASSPORT" : "AETHEX PASSPORT"}
-              </Text>
-              <Text style={{ fontSize: 24, fontWeight: "700", color: theme.text, marginTop: 4 }}>
-                {currentMember?.name || "Unknown"}
-              </Text>
-            </View>
-            <View
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: "#22c55e",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text style={{ fontSize: 20, fontWeight: "700", color: "#0B0A0F" }}>
-                {avatar}
-              </Text>
-            </View>
-          </View>
-
-          <View
-            style={{
-              backgroundColor: "#252530",
-              borderRadius: 12,
-              padding: 16,
-              marginBottom: 20,
-              alignItems: "center",
-            }}
-          >
-            <QrCode size={120} color="#22c55e" />
-          </View>
-
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <CheckCircle size={16} color="#22c55e" />
-            <Text style={{ fontSize: 14, color: "#22c55e", fontWeight: "600" }}>
-              {isEducation ? "Verified Student" : "Verified Architect"}
-            </Text>
-          </View>
-        </View>
-
-        {features.skillTree && (
-          <>
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: "600",
-                color: theme.text,
-                marginTop: 32,
-                marginBottom: 16,
-                alignSelf: "flex-start",
-              }}
-            >
-              Skill Progress
-            </Text>
-
-            <View
-              style={{
-                width: "100%",
-                backgroundColor: "#1a1a24",
-                borderRadius: 16,
-                padding: 20,
-                borderWidth: 1,
-                borderColor: "#2d2d3a",
-                marginBottom: 16,
-              }}
-            >
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Zap size={24} color="#22c55e" />
-                  <View style={{ marginLeft: 12 }}>
-                    <Text style={{ fontSize: 28, fontWeight: "700", color: "#22c55e" }}>
-                      {totalXP}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: theme.textSecondary }}>
-                      Total XP
-                    </Text>
-                  </View>
-                </View>
-                <View style={{ alignItems: "flex-end" }}>
-                  <Text style={{ fontSize: 20, fontWeight: "700", color: theme.text }}>
-                    {unlockedSkills}/{skillNodes.length}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: theme.textSecondary }}>
-                    Skills Unlocked
-                  </Text>
-                </View>
-              </View>
-
-              <View
-                style={{
-                  height: 8,
-                  backgroundColor: "#2d2d3a",
-                  borderRadius: 4,
-                  marginTop: 16,
-                  overflow: "hidden",
-                }}
-              >
-                <View
-                  style={{
-                    width: `${(unlockedSkills / skillNodes.length) * 100}%`,
-                    height: "100%",
-                    backgroundColor: "#22c55e",
-                    borderRadius: 4,
-                  }}
-                />
-              </View>
-            </View>
-          </>
-        )}
-
-        <Text
-          style={{
-            fontSize: 18,
-            fontWeight: "600",
-            color: theme.text,
-            marginTop: 16,
-            marginBottom: 16,
-            alignSelf: "flex-start",
-          }}
-        >
-          Achievements
-        </Text>
-
-        <View style={{ width: "100%", flexDirection: "row", gap: 12 }}>
-          {achievements.map((badge, index) => (
-            <Animated.View
-              key={index}
-              entering={FadeInDown.delay(200 + index * 100).duration(400)}
-              style={{
-                flex: 1,
-                backgroundColor: "#1a1a24",
-                borderRadius: 16,
-                padding: 16,
-                alignItems: "center",
-                borderWidth: 1,
-                borderColor: "#2d2d3a",
-              }}
-            >
-              <View
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  backgroundColor: badge.color + "20",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 8,
-                }}
-              >
-                <badge.icon size={24} color={badge.color} />
-              </View>
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: theme.textSecondary,
-                  textAlign: "center",
-                }}
-              >
-                {badge.label}
-              </Text>
-            </Animated.View>
-          ))}
-        </View>
-
-        <View
-          style={{
-            width: "100%",
-            backgroundColor: "#1a1a24",
-            borderRadius: 16,
-            padding: 20,
-            marginTop: 20,
-            borderWidth: 1,
-            borderColor: "#2d2d3a",
-          }}
-        >
-          <Text style={{ fontSize: 14, fontWeight: "600", color: theme.text, marginBottom: 12 }}>
-            {isEducation ? "Learning Stats" : "Wallet Stats"}
-          </Text>
-          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <View style={{ alignItems: "center" }}>
-              <Text style={{ fontSize: 24, fontWeight: "700", color: "#22c55e" }}>
-                {isEducation ? totalXP : "$4,250"}
-              </Text>
-              <Text style={{ fontSize: 12, color: theme.textSecondary }}>
-                {isEducation ? "XP Earned" : "Total Earned"}
-              </Text>
-            </View>
-            <View style={{ alignItems: "center" }}>
-              <Text style={{ fontSize: 24, fontWeight: "700", color: theme.text }}>
-                {isEducation ? unlockedSkills : "12"}
-              </Text>
-              <Text style={{ fontSize: 12, color: theme.textSecondary }}>
-                {isEducation ? "Skills" : "Bounties Done"}
-              </Text>
-            </View>
-            <View style={{ alignItems: "center" }}>
-              <Text style={{ fontSize: 24, fontWeight: "700", color: "#f59e0b" }}>
-                {isEducation ? "A+" : "4.9"}
-              </Text>
-              <Text style={{ fontSize: 12, color: theme.textSecondary }}>
-                {isEducation ? "Grade" : "Rating"}
-              </Text>
-            </View>
-          </View>
-        </View>
+      <Animated.View entering={FadeIn.duration(600)}>
+        <EnhancedPassport />
       </Animated.View>
     </ScrollView>
   );
