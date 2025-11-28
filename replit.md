@@ -142,25 +142,31 @@ npm run dev
 
 Scan the QR code with Expo Go to test on a physical device.
 
-## Design Tokens
+## AeThex Brand Identity
 
-### Day Mode Colors (Business)
-- Background: #ffffff
-- Accent: #1e3a8a
-- Secondary: #f1f5f9
-- Text: #1e293b
+### Brand Colors
+- **Primary Accent**: #5533FF (AeThex Purple)
+- **Light Accent**: #7755FF
+- **Background Dark**: #020817
+- **Background Light**: #FFFFFF
+- **Text Light**: #F8FAFC
+- **Text Dark**: #1E293B
 
-### Day Mode Colors (Education)
-- Background: #ffffff
-- Accent: #8b5cf6
-- Secondary: #f1f5f9
-- Text: #1e293b
+### Design Tokens
 
-### Night Mode Colors
-- Background: #0B0A0F
-- Accent: #22c55e
-- Secondary: #1a1a24
-- Text: #f8fafc
+#### Day Mode
+- Background: #FFFFFF
+- Accent: #5533FF
+- Secondary: #F1F5F9
+- Text: #1E293B
+- Card: #FFFFFF
+
+#### Night Mode
+- Background: #020817
+- Accent: #5533FF
+- Secondary: #1E293B
+- Text: #F8FAFC
+- Card: #0F172A
 
 ## Guardian Consent System (Education Context)
 
@@ -195,6 +201,12 @@ Scan the QR code with Expo Go to test on a physical device.
 - `EXPO_PUBLIC_SUPABASE_URL`
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 
+## Google Play Store Assets
+
+- **App Icon**: `assets/images/icon.png` - Purple geometric shape on dark blue
+- **Feature Graphic**: `attached_assets/generated_images/play_store_feature_graphic.png` (1024x500)
+- **Bundle ID**: `com.aethex.companion`
+
 ## Recent Changes (2025-11-28)
 
 1. Added unified domain models in `types/domain.ts`
@@ -210,3 +222,6 @@ Scan the QR code with Expo Go to test on a physical device.
 11. Integrated Supabase with graceful mock data fallback
 12. Fixed type safety issues with null checks in database service
 13. Added `GuardianConsentBanner` component for consent warnings
+14. **Rebranded to AeThex identity** - Purple (#5533FF) accent throughout
+15. Generated app icon and Play Store feature graphic
+16. Updated app.json with complete metadata for Android publishing
