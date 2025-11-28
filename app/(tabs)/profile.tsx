@@ -55,7 +55,7 @@ function MenuItem({ icon, title, subtitle, onPress, rightElement, delay }: MenuI
             width: 44,
             height: 44,
             borderRadius: 12,
-            backgroundColor: mode === "day" ? "#1e3a8a20" : "#22c55e20",
+            backgroundColor: "#5533FF20",
             alignItems: "center",
             justifyContent: "center",
           }}
@@ -140,7 +140,7 @@ export default function ProfileScreen() {
             width: 100,
             height: 100,
             borderRadius: 50,
-            backgroundColor: mode === "day" ? (isEducation ? "#8b5cf6" : "#1e3a8a") : "#22c55e",
+            backgroundColor: "#5533FF",
             alignItems: "center",
             justifyContent: "center",
             marginBottom: 16,
@@ -171,7 +171,7 @@ export default function ProfileScreen() {
           }}
         >
           {mode === "day" ? (
-            isEducation ? <GraduationCap size={14} color={isEducation ? "#8b5cf6" : theme.accent} /> : <Shield size={14} color={theme.accent} />
+            isEducation ? <GraduationCap size={14} color={theme.accent} /> : <Shield size={14} color={theme.accent} />
           ) : (
             <Zap size={14} color={theme.accent} />
           )}
@@ -179,7 +179,7 @@ export default function ProfileScreen() {
             style={{
               fontSize: 14,
               fontWeight: "500",
-              color: isEducation && mode === "day" ? "#8b5cf6" : theme.accent,
+              color: theme.accent,
               marginLeft: 6,
               textTransform: "capitalize",
             }}
@@ -194,20 +194,20 @@ export default function ProfileScreen() {
               flexDirection: "row",
               alignItems: "center",
               marginTop: 12,
-              backgroundColor: "#22c55e20",
+              backgroundColor: "#5533FF20",
               paddingHorizontal: 16,
               paddingVertical: 8,
               borderRadius: 20,
               borderWidth: 1,
-              borderColor: "#22c55e40",
+              borderColor: "#5533FF40",
             }}
           >
-            <Zap size={16} color="#22c55e" />
+            <Zap size={16} color="#5533FF" />
             <Text
               style={{
                 fontSize: 16,
                 fontWeight: "700",
-                color: "#22c55e",
+                color: "#5533FF",
                 marginLeft: 6,
               }}
             >
@@ -220,18 +220,18 @@ export default function ProfileScreen() {
       <Animated.View
         entering={FadeIn.delay(100).duration(400)}
         style={{
-          backgroundColor: isEducation ? "#8b5cf620" : "#1e3a8a20",
+          backgroundColor: "#5533FF20",
           borderRadius: 16,
           padding: 16,
           marginBottom: 16,
           borderWidth: 1,
-          borderColor: isEducation ? "#8b5cf640" : "#1e3a8a40",
+          borderColor: "#5533FF40",
           flexDirection: "row",
           alignItems: "center",
         }}
       >
         {isEducation ? (
-          <GraduationCap size={20} color={isEducation ? "#8b5cf6" : theme.accent} />
+          <GraduationCap size={20} color={theme.accent} />
         ) : (
           <Building2 size={20} color={theme.accent} />
         )}
@@ -245,7 +245,7 @@ export default function ProfileScreen() {
         </View>
         <View
           style={{
-            backgroundColor: isEducation ? "#8b5cf6" : "#1e3a8a",
+            backgroundColor: "#5533FF",
             paddingHorizontal: 8,
             paddingVertical: 4,
             borderRadius: 4,
@@ -260,7 +260,7 @@ export default function ProfileScreen() {
       <Animated.View
         entering={FadeIn.delay(200).duration(400)}
         style={{
-          backgroundColor: mode === "day" ? (isEducation ? "#8b5cf6" : "#1e3a8a") : "#22c55e",
+          backgroundColor: "#5533FF",
           borderRadius: 20,
           padding: 20,
           marginBottom: 24,
@@ -364,25 +364,25 @@ export default function ProfileScreen() {
       </Text>
 
       <MenuItem
-        icon={<Bell size={22} color={isEducation && mode === "day" ? "#8b5cf6" : theme.accent} />}
+        icon={<Bell size={22} color={theme.accent} />}
         title="Notifications"
         subtitle="Manage your alerts"
         delay={300}
       />
       <MenuItem
-        icon={<Settings size={22} color={isEducation && mode === "day" ? "#8b5cf6" : theme.accent} />}
+        icon={<Settings size={22} color={theme.accent} />}
         title="Preferences"
         subtitle="App settings and display"
         delay={350}
       />
       <MenuItem
-        icon={<Shield size={22} color={isEducation && mode === "day" ? "#8b5cf6" : theme.accent} />}
+        icon={<Shield size={22} color={theme.accent} />}
         title={isEducation ? "Compliance Settings" : "Privacy & Security"}
         subtitle={isEducation ? "FERPA and safety settings" : "Account protection"}
         delay={400}
       />
       <MenuItem
-        icon={<HelpCircle size={22} color={isEducation && mode === "day" ? "#8b5cf6" : theme.accent} />}
+        icon={<HelpCircle size={22} color={theme.accent} />}
         title="Help & Support"
         subtitle="Get help with the app"
         delay={450}

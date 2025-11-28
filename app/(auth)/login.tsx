@@ -61,26 +61,26 @@ export default function LoginScreen() {
       id: "business" as MarketContext,
       label: "Small Business",
       icon: Building2,
-      color: "#3b82f6",
+      color: "#5533FF",
       description: "Expenses, Approvals, Bounties",
     },
     {
       id: "education" as MarketContext,
       label: "K-12 Education",
       icon: GraduationCap,
-      color: "#8b5cf6",
+      color: "#7755FF",
       description: "Compliance, Rostering, Safety",
     },
   ];
 
   const demoAccounts = selectedContext === "business"
     ? [
-        { username: "admin", label: "Owner", mode: "Day Mode", color: "#3b82f6" },
-        { username: "creator", label: "Contractor", mode: "Night Mode", color: "#22c55e" },
+        { username: "admin", label: "Owner", mode: "Day Mode", color: "#5533FF" },
+        { username: "creator", label: "Contractor", mode: "Night Mode", color: "#5533FF" },
       ]
     : [
-        { username: "teacher", label: "Teacher", mode: "Day Mode", color: "#3b82f6" },
-        { username: "student", label: "Student", mode: "Night Mode", color: "#22c55e" },
+        { username: "teacher", label: "Teacher", mode: "Day Mode", color: "#5533FF" },
+        { username: "student", label: "Student", mode: "Night Mode", color: "#5533FF" },
       ];
 
   return (
@@ -91,7 +91,7 @@ export default function LoginScreen() {
       <View
         style={{
           flex: 1,
-          backgroundColor: "#0B0A0F",
+          backgroundColor: "#020817",
           paddingTop: insets.top,
           paddingBottom: insets.bottom,
         }}
@@ -112,13 +112,13 @@ export default function LoginScreen() {
                 width: 80,
                 height: 80,
                 borderRadius: 20,
-                backgroundColor: "#22c55e",
+                backgroundColor: "#5533FF",
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 24,
               }}
             >
-              <Shield size={40} color="#0B0A0F" strokeWidth={2.5} />
+              <Shield size={40} color="#F8FAFC" strokeWidth={2.5} />
             </View>
             <Text
               style={{
@@ -285,7 +285,7 @@ export default function LoginScreen() {
               onPress={handleLogin}
               disabled={isLoading}
               style={({ pressed }) => ({
-                backgroundColor: "#22c55e",
+                backgroundColor: "#5533FF",
                 borderRadius: 16,
                 height: 56,
                 alignItems: "center",
@@ -293,14 +293,18 @@ export default function LoginScreen() {
                 flexDirection: "row",
                 gap: 8,
                 opacity: pressed || isLoading ? 0.8 : 1,
+                shadowColor: "#5533FF",
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.4,
+                shadowRadius: 20,
               })}
             >
-              <Shield size={20} color="#0B0A0F" />
+              <Shield size={20} color="#F8FAFC" />
               <Text
                 style={{
                   fontSize: 17,
                   fontWeight: "600",
-                  color: "#0B0A0F",
+                  color: "#F8FAFC",
                 }}
               >
                 {isLoading ? "Authenticating..." : "Sign in with AeThex Passport"}

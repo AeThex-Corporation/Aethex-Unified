@@ -3,21 +3,33 @@
     "name": "AeThex Companion",
     "slug": "aethex-companion",
     "version": "1.0.0",
+    "description": "Dual-mode compliance and engagement platform for business and education. Switch between Day Mode for oversight and Night Mode for productivity.",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "aethex",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "primaryColor": "#5533FF",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.aethex.companion"
+      "bundleIdentifier": "com.aethex.companion",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "AeThex Companion uses the camera to scan documents and receipts.",
+        "NSPhotoLibraryUsageDescription": "AeThex Companion accesses photos to attach to expense reports."
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0B0A0F",
+        "backgroundColor": "#020817",
         "foregroundImage": "./assets/images/icon.png"
       },
       "package": "com.aethex.companion",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE"
+      ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
@@ -34,9 +46,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#0B0A0F",
+          "backgroundColor": "#020817",
           "dark": {
-            "backgroundColor": "#0B0A0F"
+            "backgroundColor": "#020817"
           }
         }
       ],

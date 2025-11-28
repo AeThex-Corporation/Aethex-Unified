@@ -300,8 +300,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 export const themes = {
   day: {
     background: "#ffffff",
-    accent: "#1e3a8a",
-    accentLight: "#3b82f6",
+    accent: "#5533FF",
+    accentLight: "#7755FF",
     secondary: "#f1f5f9",
     tertiary: "#e2e8f0",
     text: "#1e293b",
@@ -313,18 +313,18 @@ export const themes = {
     card: "#ffffff",
   },
   night: {
-    background: "#0B0A0F",
-    accent: "#22c55e",
-    accentLight: "#4ade80",
-    secondary: "#1a1a24",
-    tertiary: "#252530",
+    background: "#020817",
+    accent: "#5533FF",
+    accentLight: "#7755FF",
+    secondary: "#1E293B",
+    tertiary: "#334155",
     text: "#f8fafc",
     textSecondary: "#94a3b8",
-    border: "#2d2d3a",
+    border: "#334155",
     success: "#22c55e",
     warning: "#f59e0b",
     error: "#ef4444",
-    card: "#13131a",
+    card: "#0f172a",
   },
 };
 
