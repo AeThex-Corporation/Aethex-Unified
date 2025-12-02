@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -13,8 +13,10 @@ function RootLayoutNav() {
   const { isLoading, loadSession, isAuthenticated, mode } = useAppStore();
   const segments = useSegments();
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     loadSession();
   }, []);
 
@@ -25,17 +27,16 @@ function RootLayoutNav() {
   }, [isLoading]);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !isMounted) return;
 
     const inAuthGroup = segments[0] === "(auth)";
-    const inTabsGroup = segments[0] === "(tabs)";
 
     if (isAuthenticated && inAuthGroup) {
-      router.replace("/(tabs)/home");
+      setTimeout(() => router.replace("/(tabs)/home"), 0);
     } else if (!isAuthenticated && !inAuthGroup) {
-      router.replace("/(auth)/login");
+      setTimeout(() => router.replace("/(auth)/login"), 0);
     }
-  }, [isLoading, isAuthenticated, segments]);
+  }, [isLoading, isAuthenticated, segments, isMounted]);
 
   if (isLoading) {
     return null;
