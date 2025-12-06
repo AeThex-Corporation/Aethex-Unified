@@ -20,6 +20,8 @@ import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useAppStore, useTheme, useTerminology, useFeatures } from "@/store/appStore";
+import { AIAssistantWidget } from "@/components/AIAssistant";
+import { Spacing } from "@/constants/theme";
 
 interface ApprovalCardProps {
   title: string;
@@ -296,6 +298,10 @@ function DayModeActions() {
           delay={100 + index * 100}
         />
       ))}
+
+      <View style={{ marginTop: Spacing.xl }}>
+        <AIAssistantWidget />
+      </View>
     </ScrollView>
   );
 }
