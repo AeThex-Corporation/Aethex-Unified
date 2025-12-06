@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
 import {
   Camera,
@@ -12,8 +12,12 @@ import Animated, {
   FadeInDown,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 import { useAppStore, useTheme, useTerminology } from "@/store/appStore";
 import { EnhancedPassport } from "@/components/EnhancedPassport";
+import { WalletOverview } from "@/components/WalletSection";
+import { XPDashboard } from "@/components/XPDashboard";
+import { Spacing } from "@/constants/theme";
 
 function DayModeScanner() {
   const theme = useTheme();
@@ -23,6 +27,11 @@ function DayModeScanner() {
   const [isScanning, setIsScanning] = useState(false);
 
   const isEducation = marketContext === "education";
+
+  const handleScan = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsScanning(!isScanning);
+  };
 
   const recentItems = isEducation ? [
     { title: "Student Roster Import", amount: "42 records", date: "Today", category: "Sync" },
@@ -43,7 +52,7 @@ function DayModeScanner() {
     >
       <Animated.View entering={FadeInDown.duration(400)}>
         <Pressable
-          onPress={() => setIsScanning(!isScanning)}
+          onPress={handleScan}
           style={({ pressed }) => ({
             backgroundColor: isScanning ? "#22c55e" : (isEducation ? "#8b5cf6" : "#1e3a8a"),
             borderRadius: 24,
@@ -214,6 +223,9 @@ function DayModeScanner() {
 function NightModeWallet() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { marketContext } = useAppStore();
+
+  const isEducation = marketContext === "education";
 
   return (
     <ScrollView
@@ -223,9 +235,25 @@ function NightModeWallet() {
         paddingBottom: insets.bottom + 100,
       }}
     >
-      <Animated.View entering={FadeIn.duration(600)}>
-        <EnhancedPassport />
-      </Animated.View>
+      {isEducation ? (
+        <>
+          <Animated.View entering={FadeIn.duration(600)}>
+            <XPDashboard />
+          </Animated.View>
+          <View style={{ marginTop: Spacing.xl }}>
+            <EnhancedPassport />
+          </View>
+        </>
+      ) : (
+        <>
+          <Animated.View entering={FadeIn.duration(600)}>
+            <WalletOverview />
+          </Animated.View>
+          <View style={{ marginTop: Spacing.xl }}>
+            <EnhancedPassport />
+          </View>
+        </>
+      )}
     </ScrollView>
   );
 }

@@ -19,9 +19,16 @@ import {
 } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 import { useAppStore, useTheme, useTerminology, useFeatures } from "@/store/appStore";
 import SprintCountdown from "@/components/SprintCountdown";
 import GigRadar from "@/components/GigRadar";
+import { XPDashboard } from "@/components/XPDashboard";
+import { AchievementList } from "@/components/AchievementCard";
+import { QuestList } from "@/components/QuestCard";
+import { GlassCard } from "@/components/GlassCard";
+import { StudentDashboard } from "@/components/StudentNightMode";
+import { Spacing } from "@/constants/theme";
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -77,102 +84,6 @@ function StatCard({ icon, title, value, subtitle, color, delay }: StatCardProps)
       <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
         {subtitle}
       </Text>
-    </Animated.View>
-  );
-}
-
-interface ItemCardProps {
-  icon: React.ReactNode;
-  title: string;
-  reward?: string;
-  category: string;
-  status: string;
-  color: string;
-  delay: number;
-}
-
-function ItemCard({
-  icon,
-  title,
-  reward,
-  category,
-  status,
-  color,
-  delay,
-}: ItemCardProps) {
-  const theme = useTheme();
-  const { mode } = useAppStore();
-
-  return (
-    <Animated.View entering={FadeInDown.delay(delay).duration(400)}>
-      <Pressable
-        style={({ pressed }) => ({
-          backgroundColor: mode === "day" ? "#f8fafc" : "#1a1a24",
-          borderRadius: 16,
-          padding: 16,
-          borderWidth: 1,
-          borderColor: mode === "day" ? "#e2e8f0" : "#2d2d3a",
-          opacity: pressed ? 0.8 : 1,
-        })}
-      >
-        <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              backgroundColor: color + "20",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            {icon}
-          </View>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "600",
-                color: theme.text,
-                marginBottom: 4,
-              }}
-            >
-              {title}
-            </Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <View
-                style={{
-                  backgroundColor: color + "20",
-                  paddingHorizontal: 8,
-                  paddingVertical: 2,
-                  borderRadius: 4,
-                }}
-              >
-                <Text style={{ fontSize: 12, color }}>{category}</Text>
-              </View>
-              <Text style={{ fontSize: 12, color: theme.textSecondary }}>
-                {status}
-              </Text>
-            </View>
-          </View>
-          {reward ? (
-            <View style={{ alignItems: "flex-end" }}>
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "700",
-                  color: "#22c55e",
-                }}
-              >
-                {reward}
-              </Text>
-              <ArrowRight size={16} color={theme.textSecondary} />
-            </View>
-          ) : (
-            <ArrowRight size={16} color={theme.textSecondary} />
-          )}
-        </View>
-      </Pressable>
     </Animated.View>
   );
 }
@@ -385,56 +296,68 @@ function DayModeHome() {
 function NightModeHome() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { marketContext, events, getTotalXP, skillNodes } = useAppStore();
-  const features = useFeatures();
+  const { marketContext, events } = useAppStore();
 
   const isEducation = marketContext === "education";
-  const totalXP = getTotalXP();
-  const unlockedSkills = skillNodes.filter(s => s.isUnlocked).length;
 
-  if (!isEducation) {
+  if (isEducation) {
     return (
       <ScrollView
         style={{ flex: 1, backgroundColor: theme.background }}
         contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 100 }}
       >
+        <StudentDashboard />
+      </ScrollView>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 100 }}
+    >
+      <XPDashboard />
+      
+      <View style={{ marginTop: Spacing.xl }}>
         <SprintCountdown />
+      </View>
+      
+      <View style={{ marginTop: Spacing.lg }}>
         <GigRadar />
+      </View>
 
-        {events.filter(e => e.gamification.isUnlocked).length > 0 && (
-          <>
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: "600",
-                color: theme.text,
-                marginTop: 24,
-                marginBottom: 16,
-              }}
-            >
-              Recent Achievements
-            </Text>
+      <View style={{ marginTop: Spacing.xl }}>
+        <QuestList category="daily" />
+      </View>
 
-            {events
-              .filter(e => e.gamification.isUnlocked)
-              .slice(0, 3)
-              .map((event, index) => (
-                <Animated.View 
-                  key={event.id} 
-                  entering={FadeInDown.delay(400 + index * 50).duration(400)}
-                >
-                  <View
-                    style={{
-                      backgroundColor: "#1a1a24",
-                      borderRadius: 16,
-                      padding: 16,
-                      marginBottom: 12,
-                      borderWidth: 1,
-                      borderColor: "#22c55e40",
-                      flexDirection: "row",
-                      alignItems: "center",
-                    }}
-                  >
+      <View style={{ marginTop: Spacing.xl }}>
+        <AchievementList filter="unlocked" limit={6} />
+      </View>
+
+      {events.filter(e => e.gamification.isUnlocked).length > 0 && (
+        <>
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: "600",
+              color: theme.text,
+              marginTop: 24,
+              marginBottom: 16,
+            }}
+          >
+            Recent Activity
+          </Text>
+
+          {events
+            .filter(e => e.gamification.isUnlocked)
+            .slice(0, 3)
+            .map((event, index) => (
+              <Animated.View 
+                key={event.id} 
+                entering={FadeInDown.delay(400 + index * 50).duration(400)}
+              >
+                <GlassCard style={{ padding: 16, marginBottom: 12 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
                     <View
                       style={{
                         width: 40,
@@ -468,165 +391,7 @@ function NightModeHome() {
                       </Text>
                     </View>
                   </View>
-                </Animated.View>
-              ))}
-          </>
-        )}
-      </ScrollView>
-    );
-  }
-
-  return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: theme.background }}
-      contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 100 }}
-    >
-      <Animated.View entering={FadeInDown.duration(400)}>
-        <View
-          style={{
-            backgroundColor: "#8b5cf6",
-            borderRadius: 20,
-            padding: 20,
-            marginBottom: 20,
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-            <Zap size={24} color="#FFFFFF" />
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: "600",
-                color: "#FFFFFF",
-                marginLeft: 10,
-              }}
-            >
-              Skill Progress
-            </Text>
-          </View>
-          <Text style={{ fontSize: 14, color: "#E9D5FF" }}>
-            {totalXP} XP earned - {unlockedSkills} skills unlocked
-          </Text>
-        </View>
-      </Animated.View>
-
-      {features.skillTree && (
-        <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
-          <StatCard
-            icon={<Zap size={20} color="#22c55e" />}
-            title="Total XP"
-            value={totalXP.toString()}
-            subtitle="Earned"
-            color="#22c55e"
-            delay={100}
-          />
-          <StatCard
-            icon={<CheckCircle size={20} color="#8b5cf6" />}
-            title="Skills"
-            value={`${unlockedSkills}/${skillNodes.length}`}
-            subtitle="Unlocked"
-            color="#8b5cf6"
-            delay={150}
-          />
-        </View>
-      )}
-
-      <Text
-        style={{
-          fontSize: 18,
-          fontWeight: "600",
-          color: theme.text,
-          marginBottom: 16,
-        }}
-      >
-        Active Assignments
-      </Text>
-
-      <View style={{ gap: 12 }}>
-        <ItemCard
-          icon={<BookOpen size={24} color="#8b5cf6" />}
-          title="Network Security Fundamentals"
-          category="Computer Science"
-          status="Due in 3 days"
-          color="#8b5cf6"
-          delay={200}
-        />
-        <ItemCard
-          icon={<Code size={24} color="#22c55e" />}
-          title="Python Data Structures"
-          category="Programming"
-          status="Due in 1 week"
-          color="#22c55e"
-          delay={250}
-        />
-      </View>
-
-      {events.filter(e => e.gamification.isUnlocked).length > 0 && (
-        <>
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: "600",
-              color: theme.text,
-              marginTop: 24,
-              marginBottom: 16,
-            }}
-          >
-            Recent Achievements
-          </Text>
-
-          {events
-            .filter(e => e.gamification.isUnlocked)
-            .slice(0, 3)
-            .map((event, index) => (
-              <Animated.View 
-                key={event.id} 
-                entering={FadeInDown.delay(400 + index * 50).duration(400)}
-              >
-                <View
-                  style={{
-                    backgroundColor: "#1a1a24",
-                    borderRadius: 16,
-                    padding: 16,
-                    marginBottom: 12,
-                    borderWidth: 1,
-                    borderColor: "#8b5cf640",
-                    flexDirection: "row",
-                    alignItems: "center",
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
-                      backgroundColor: "#8b5cf620",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Zap size={20} color="#8b5cf6" />
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={{ fontSize: 15, fontWeight: "600", color: theme.text }}>
-                      {event.gamification.skillName}
-                    </Text>
-                    <Text style={{ fontSize: 13, color: theme.textSecondary }}>
-                      +{event.gamification.xp} XP - {event.gamification.tier.replace("_", " ")}
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      backgroundColor: "#8b5cf620",
-                      paddingHorizontal: 8,
-                      paddingVertical: 4,
-                      borderRadius: 4,
-                    }}
-                  >
-                    <Text style={{ fontSize: 12, color: "#8b5cf6", fontWeight: "600" }}>
-                      UNLOCKED
-                    </Text>
-                  </View>
-                </View>
+                </GlassCard>
               </Animated.View>
             ))}
         </>

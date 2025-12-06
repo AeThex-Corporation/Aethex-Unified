@@ -235,6 +235,66 @@ Two primary entry points (no complex role selection):
 1. **"Sign In with AeThex Passport"** → Business context (creators, staff)
 2. **"Sign In with District Credentials"** → Education context (students, admins)
 
+## Gamification System
+
+### XP Dashboard (`components/XPDashboard.tsx`)
+- Level display with animated circular badge
+- XP progress bar with spring animations
+- Streak tracking with fire icon
+- Stats row: Day Streak, Achievements, Quests Done
+
+### Achievement System (`components/AchievementCard.tsx`)
+- 15+ achievements across categories: milestone, streak, skill, social, special
+- Unlock animations with glow effects
+- Progress tracking for incomplete achievements
+- Achievement toast notifications
+
+### Quest System (`components/QuestCard.tsx`)
+- Daily and weekly quests with XP rewards
+- Step-by-step progress tracking
+- Business quests: gig applications, connections
+- Education quests: study tasks, collaboration
+
+### Gamification Service (`services/gamificationService.ts`)
+- Level calculation (1000 XP base, 1.2x multiplier)
+- Achievement unlocking and tracking
+- Transaction history for wallet
+- Streak management with daily updates
+
+## UI Components
+
+### Glass Card (`components/GlassCard.tsx`)
+- Frosted glass effect with expo-blur
+- Light/dark tint based on mode
+- Web fallback with backdrop-filter
+- Subtle border glow effect
+
+### Animated Splash (`components/AnimatedSplash.tsx`)
+- AeThex logo with scale/rotate animation
+- Pulsing ring effect
+- Loading progress bar
+- 2.5 second duration before transition
+
+### Student Night Mode (`components/StudentNightMode.tsx`)
+- Skill Tree visualization with 6 subjects
+- Level badges on skill nodes
+- Study Groups with online indicators
+- Quick quest preview cards
+
+### Wallet Section (`components/WalletSection.tsx`)
+- Balance Card: available, pending, total earned
+- Withdraw/Add/Send action buttons
+- Transaction History with type icons
+- Pending transaction indicators
+
+## Onboarding Flow
+
+Route: `app/(onboarding)/index.tsx`
+- 4 swipe-able slides: Welcome, Day Mode, Night Mode, Gamification
+- Skip button for quick access
+- Pagination dots with tap navigation
+- Stored in AsyncStorage: "aethex_onboarding_complete"
+
 ## Recent Changes (2025-12-06)
 
 1. **Simplified login screen** - Two entry points only (Passport + District)
@@ -242,6 +302,15 @@ Two primary entry points (no complex role selection):
 3. **Added Sprint Countdown** - 30-day GameForge timer with Kill-Gate status
 4. **Created NexusService** - API layer for skills, gigs, and sprint data
 5. Fixed Supabase client error with graceful mock data fallback
+6. **Added Onboarding Flow** - 4-screen introduction with branded visuals
+7. **Added XP Dashboard** - Level, XP bar, streak, achievements display
+8. **Added Achievement System** - 15+ badges with unlock animations
+9. **Added Quest System** - Daily/weekly quests with XP rewards
+10. **Added Wallet Section** - Balance, transactions, withdraw functionality
+11. **Added Glass Card UI** - Frosted glass effect components
+12. **Added Animated Splash** - Branded loading animation
+13. **Added Student Night Mode** - Skill Tree, Study Groups, Study Quests
+14. **Added Haptic Feedback** - Throughout key interactions
 
 ## Previous Changes (2025-11-28)
 
