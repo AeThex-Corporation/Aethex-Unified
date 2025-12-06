@@ -311,6 +311,11 @@ Route: `app/(onboarding)/index.tsx`
 12. **Added Animated Splash** - Branded loading animation
 13. **Added Student Night Mode** - Skill Tree, Study Groups, Study Quests
 14. **Added Haptic Feedback** - Throughout key interactions
+15. **Added Business Dashboard** - Comprehensive Day Mode dashboard with compliance metrics, expense tracking, budget categories, audit logs
+16. **Added K12 Admin Dashboard** - Student safety metrics, consent status tracking, class overview, FERPA compliance indicators
+17. **Added Guardian Consent Manager** - Full consent record management, status badges, send reminders, renewal workflow
+18. **Added AI Assistant Widget** - Context-aware smart suggestions with action buttons, pulsing indicator, insights/warnings/tips
+19. **Integrated AI Assistant into Actions screen** - Smart suggestions appear in Day Mode actions
 
 ## Previous Changes (2025-11-28)
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import Animated, { FadeInDown, FadeInRight } from "react-native-reanimated";
 import {
@@ -17,7 +17,7 @@ import {
   Mail,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import { useTheme } from "@/store/appStore";
+import { useAppStore, useTheme } from "@/store/appStore";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
 interface StudentAlert {
@@ -41,26 +41,6 @@ interface ConsentRequest {
   status: "pending" | "approved" | "denied";
 }
 
-const MOCK_ALERTS: StudentAlert[] = [
-  { id: "1", studentName: "Emma Wilson", grade: "5th", alertType: "pii_attempt", description: "Attempted to share phone number in study group chat", time: "10 min ago", severity: "high", resolved: false },
-  { id: "2", studentName: "James Chen", grade: "6th", alertType: "content_flag", description: "Message flagged for review in group discussion", time: "25 min ago", severity: "medium", resolved: false },
-  { id: "3", studentName: "Sofia Rodriguez", grade: "4th", alertType: "consent_expired", description: "Guardian consent expires in 3 days", time: "1 hour ago", severity: "low", resolved: false },
-  { id: "4", studentName: "Liam Johnson", grade: "5th", alertType: "guardian_request", description: "Guardian requested data export", time: "2 hours ago", severity: "medium", resolved: false },
-];
-
-const MOCK_CONSENT_REQUESTS: ConsentRequest[] = [
-  { id: "1", studentName: "Olivia Brown", guardianName: "Michael Brown", guardianEmail: "m.brown@email.com", requestType: "full", requestedAt: "Today", status: "pending" },
-  { id: "2", studentName: "Noah Davis", guardianName: "Sarah Davis", guardianEmail: "s.davis@email.com", requestType: "limited", requestedAt: "Yesterday", status: "pending" },
-];
-
-const CLASS_STATS = {
-  totalStudents: 156,
-  activeNow: 42,
-  withConsent: 148,
-  pendingConsent: 8,
-  alertsToday: 3,
-  piiBlocked: 12,
-};
 
 function SafetyMetricCard({ 
   icon, 
@@ -204,15 +184,60 @@ function ConsentRequestCard({ request, onApprove, onDeny }: {
 
 export function K12AdminDashboard() {
   const theme = useTheme();
-  const [alerts, setAlerts] = useState(MOCK_ALERTS);
-  const [consentRequests, setConsentRequests] = useState(MOCK_CONSENT_REQUESTS);
+  const { members, auditLogs, getComplianceStats, isLoading } = useAppStore();
+  const [resolvedAlertIds, setResolvedAlertIds] = useState<string[]>([]);
+  const [consentStatusMap, setConsentStatusMap] = useState<Record<string, "pending" | "approved" | "denied">>({});
+
+  const complianceStats = getComplianceStats();
+  const students = members.filter(m => m.role === "student" || m.role === "employee");
+  const activeStudents = students.filter(m => m.status === "active");
+  
+  const classStats = useMemo(() => ({
+    totalStudents: students.length,
+    activeNow: activeStudents.length,
+    withConsent: students.filter(m => m.status === "active").length,
+    pendingConsent: students.filter(m => m.status === "suspended").length,
+    alertsToday: complianceStats.flaggedCount,
+    piiBlocked: complianceStats.blockedCount,
+  }), [students, activeStudents, complianceStats]);
+
+  const alerts = useMemo((): StudentAlert[] => {
+    return auditLogs
+      .filter(log => log.flagged)
+      .slice(0, 5)
+      .map((log): StudentAlert => ({
+        id: log.id,
+        studentName: members.find(m => m.id === log.memberId)?.name || "Unknown Student",
+        grade: "5th",
+        alertType: log.action.includes("pii") ? "pii_attempt" : "content_flag",
+        description: log.trigger || log.action,
+        time: new Date(log.timestamp).toLocaleTimeString(),
+        severity: log.riskLevel === "HIGH" ? "high" : log.riskLevel === "MEDIUM" ? "medium" : "low",
+        resolved: resolvedAlertIds.includes(log.id),
+      }));
+  }, [auditLogs, members, resolvedAlertIds]);
+
+  const consentRequests = useMemo((): ConsentRequest[] => {
+    return students
+      .filter(s => s.status === "suspended" || s.status === "inactive")
+      .slice(0, 3)
+      .map((student, idx): ConsentRequest => ({
+        id: `consent-${student.id}`,
+        studentName: student.name,
+        guardianName: `Guardian of ${student.name.split(" ")[0]}`,
+        guardianEmail: student.email || `guardian${idx}@email.com`,
+        requestType: idx === 0 ? "full" : "limited",
+        requestedAt: idx === 0 ? "Today" : "Yesterday",
+        status: consentStatusMap[`consent-${student.id}`] || "pending",
+      }));
+  }, [students, consentStatusMap]);
 
   const unresolvedAlerts = alerts.filter(a => !a.resolved);
   const pendingConsents = consentRequests.filter(c => c.status === "pending");
 
   const handleResolveAlert = (id: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setAlerts(prev => prev.map(a => a.id === id ? { ...a, resolved: true } : a));
+    setResolvedAlertIds(prev => [...prev, id]);
   };
 
   const handleViewAlert = (id: string) => {
@@ -221,13 +246,21 @@ export function K12AdminDashboard() {
 
   const handleApproveConsent = (id: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setConsentRequests(prev => prev.map(c => c.id === id ? { ...c, status: "approved" as const } : c));
+    setConsentStatusMap(prev => ({ ...prev, [id]: "approved" }));
   };
 
   const handleDenyConsent = (id: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    setConsentRequests(prev => prev.map(c => c.id === id ? { ...c, status: "denied" as const } : c));
+    setConsentStatusMap(prev => ({ ...prev, [id]: "denied" }));
   };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text style={{ color: theme.textSecondary }}>Loading dashboard...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -241,17 +274,17 @@ export function K12AdminDashboard() {
         </Text>
         <View style={styles.bannerStats}>
           <View style={styles.bannerStat}>
-            <Text style={styles.bannerStatValue}>{CLASS_STATS.totalStudents}</Text>
+            <Text style={styles.bannerStatValue}>{classStats.totalStudents}</Text>
             <Text style={styles.bannerStatLabel}>Students</Text>
           </View>
           <View style={[styles.bannerDivider, { backgroundColor: "rgba(255,255,255,0.3)" }]} />
           <View style={styles.bannerStat}>
-            <Text style={styles.bannerStatValue}>{CLASS_STATS.piiBlocked}</Text>
+            <Text style={styles.bannerStatValue}>{classStats.piiBlocked}</Text>
             <Text style={styles.bannerStatLabel}>PII Blocked</Text>
           </View>
           <View style={[styles.bannerDivider, { backgroundColor: "rgba(255,255,255,0.3)" }]} />
           <View style={styles.bannerStat}>
-            <Text style={styles.bannerStatValue}>100%</Text>
+            <Text style={styles.bannerStatValue}>{classStats.withConsent > 0 ? "100%" : "0%"}</Text>
             <Text style={styles.bannerStatLabel}>Compliant</Text>
           </View>
         </View>
@@ -261,22 +294,22 @@ export function K12AdminDashboard() {
         <SafetyMetricCard
           icon={<Users size={18} color="#3B82F6" />}
           title="Active Now"
-          value={CLASS_STATS.activeNow.toString()}
+          value={classStats.activeNow.toString()}
           color="#3B82F6"
           delay={100}
         />
         <SafetyMetricCard
           icon={<UserCheck size={18} color="#22C55E" />}
           title="With Consent"
-          value={CLASS_STATS.withConsent.toString()}
-          subtitle={`${CLASS_STATS.pendingConsent} pending`}
+          value={classStats.withConsent.toString()}
+          subtitle={classStats.pendingConsent > 0 ? `${classStats.pendingConsent} pending` : undefined}
           color="#22C55E"
           delay={150}
         />
         <SafetyMetricCard
           icon={<AlertTriangle size={18} color="#F59E0B" />}
           title="Alerts Today"
-          value={CLASS_STATS.alertsToday.toString()}
+          value={classStats.alertsToday.toString()}
           color="#F59E0B"
           delay={200}
         />
@@ -291,15 +324,24 @@ export function K12AdminDashboard() {
             <Text style={{ color: "#8B5CF6", fontWeight: "600" }}>View All</Text>
           </Pressable>
         </View>
-        {unresolvedAlerts.slice(0, 3).map((alert, index) => (
-          <Animated.View key={alert.id} entering={FadeInDown.delay(300 + index * 50).duration(400)}>
-            <AlertCard
-              alert={alert}
-              onResolve={() => handleResolveAlert(alert.id)}
-              onView={() => handleViewAlert(alert.id)}
-            />
-          </Animated.View>
-        ))}
+        {unresolvedAlerts.length === 0 ? (
+          <View style={[styles.emptyState, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <CheckCircle size={24} color="#22C55E" />
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+              No active alerts - all students are safe
+            </Text>
+          </View>
+        ) : (
+          unresolvedAlerts.slice(0, 3).map((alert, index) => (
+            <Animated.View key={alert.id} entering={FadeInDown.delay(300 + index * 50).duration(400)}>
+              <AlertCard
+                alert={alert}
+                onResolve={() => handleResolveAlert(alert.id)}
+                onView={() => handleViewAlert(alert.id)}
+              />
+            </Animated.View>
+          ))
+        )}
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(450).duration(400)}>
@@ -308,15 +350,24 @@ export function K12AdminDashboard() {
             Consent Requests ({pendingConsents.length})
           </Text>
         </View>
-        {pendingConsents.map((request, index) => (
-          <Animated.View key={request.id} entering={FadeInDown.delay(500 + index * 50).duration(400)}>
-            <ConsentRequestCard
-              request={request}
-              onApprove={() => handleApproveConsent(request.id)}
-              onDeny={() => handleDenyConsent(request.id)}
-            />
-          </Animated.View>
-        ))}
+        {pendingConsents.length === 0 ? (
+          <View style={[styles.emptyState, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <UserCheck size={24} color="#22C55E" />
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+              No pending consent requests
+            </Text>
+          </View>
+        ) : (
+          pendingConsents.map((request, index) => (
+            <Animated.View key={request.id} entering={FadeInDown.delay(500 + index * 50).duration(400)}>
+              <ConsentRequestCard
+                request={request}
+                onApprove={() => handleApproveConsent(request.id)}
+                onDeny={() => handleDenyConsent(request.id)}
+              />
+            </Animated.View>
+          ))
+        )}
       </Animated.View>
     </View>
   );
@@ -496,6 +547,18 @@ const styles = StyleSheet.create({
   },
   approveButton: {
     backgroundColor: "#8B5CF6",
+  },
+  emptyState: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.md,
+  },
+  emptyText: {
+    fontSize: 14,
+    textAlign: "center",
   },
 });
 

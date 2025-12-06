@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import React, { useState, useMemo } from "react";
+import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import Animated, { FadeInDown, FadeInRight } from "react-native-reanimated";
 import {
   DollarSign,
@@ -19,7 +19,7 @@ import {
   Shield,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import { useTheme, useTerminology } from "@/store/appStore";
+import { useAppStore, useTheme, useTerminology } from "@/store/appStore";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
 interface ExpenseItem {
@@ -32,25 +32,6 @@ interface ExpenseItem {
   status: "pending" | "approved" | "rejected";
   urgency: "normal" | "high" | "urgent";
 }
-
-const MOCK_EXPENSES: ExpenseItem[] = [
-  { id: "1", title: "Client Dinner - Acme Corp", amount: 245.50, category: "Meals", submittedBy: "Sarah Chen", date: "Today", status: "pending", urgency: "normal" },
-  { id: "2", title: "Software License - Figma", amount: 180.00, category: "Software", submittedBy: "Mike Johnson", date: "Yesterday", status: "pending", urgency: "high" },
-  { id: "3", title: "Travel - NYC Conference", amount: 1250.00, category: "Travel", submittedBy: "Emily Davis", date: "Dec 4", status: "pending", urgency: "urgent" },
-  { id: "4", title: "Office Supplies", amount: 89.99, category: "Supplies", submittedBy: "Alex Kim", date: "Dec 3", status: "approved", urgency: "normal" },
-];
-
-const BUDGET_DATA = {
-  total: 50000,
-  used: 32450,
-  pending: 4500,
-  categories: [
-    { name: "Travel", used: 12500, budget: 15000, color: "#3B82F6" },
-    { name: "Software", used: 8200, budget: 10000, color: "#8B5CF6" },
-    { name: "Meals", used: 4800, budget: 8000, color: "#22C55E" },
-    { name: "Supplies", used: 3200, budget: 5000, color: "#F59E0B" },
-  ],
-};
 
 function MetricCard({ 
   icon, 
@@ -93,7 +74,14 @@ function MetricCard({
   );
 }
 
-function BudgetProgress({ category, delay }: { category: typeof BUDGET_DATA.categories[0]; delay: number }) {
+interface BudgetCategory {
+  name: string;
+  used: number;
+  budget: number;
+  color: string;
+}
+
+function BudgetProgress({ category, delay }: { category: BudgetCategory; delay: number }) {
   const theme = useTheme();
   const percentage = Math.round((category.used / category.budget) * 100);
   const isOverBudget = percentage > 90;
@@ -187,20 +175,73 @@ function ExpenseCard({ expense, onApprove, onReject }: {
 export function BusinessDashboard() {
   const theme = useTheme();
   const terminology = useTerminology();
-  const [expenses, setExpenses] = useState(MOCK_EXPENSES);
+  const { ledgerItems, members, auditLogs, updateLedgerItemStatus, getComplianceStats, isLoading } = useAppStore();
+  
+  const complianceStats = getComplianceStats();
+  const activeMembers = members.filter(m => m.status === "active");
+  
+  const expenses = useMemo(() => {
+    return ledgerItems.map(item => ({
+      id: item.id,
+      title: item.title || item.description || "Untitled",
+      amount: item.amount || 0,
+      category: item.category || "Other",
+      submittedBy: members.find(m => m.id === item.memberId)?.name || "Unknown",
+      date: new Date(item.createdAt).toLocaleDateString(),
+      status: (item.status === "completed" || item.status === "overdue" ? "approved" : item.status) as "pending" | "approved" | "rejected",
+      urgency: (item.metadata?.urgency || "normal") as "normal" | "high" | "urgent",
+    }));
+  }, [ledgerItems, members]);
 
   const pendingCount = expenses.filter(e => e.status === "pending").length;
   const pendingTotal = expenses.filter(e => e.status === "pending").reduce((sum, e) => sum + e.amount, 0);
+  const approvedCount = expenses.filter(e => e.status === "approved").length;
+
+  const budgetData = useMemo(() => {
+    const categories: Record<string, { used: number; budget: number; color: string }> = {
+      "Travel": { used: 0, budget: 15000, color: "#3B82F6" },
+      "Software": { used: 0, budget: 10000, color: "#8B5CF6" },
+      "Meals": { used: 0, budget: 8000, color: "#22C55E" },
+      "Supplies": { used: 0, budget: 5000, color: "#F59E0B" },
+      "Equipment": { used: 0, budget: 12000, color: "#EF4444" },
+    };
+    
+    ledgerItems.filter(i => i.status === "approved" || i.status === "completed").forEach(item => {
+      const cat = item.category || "Other";
+      if (categories[cat]) {
+        categories[cat].used += item.amount || 0;
+      }
+    });
+    
+    const total = Object.values(categories).reduce((sum, c) => sum + c.budget, 0);
+    const used = Object.values(categories).reduce((sum, c) => sum + c.used, 0);
+    const pending = ledgerItems.filter(i => i.status === "pending").reduce((sum, i) => sum + (i.amount || 0), 0);
+    
+    return {
+      total,
+      used,
+      pending,
+      categories: Object.entries(categories).map(([name, data]) => ({ name, ...data })),
+    };
+  }, [ledgerItems]);
 
   const handleApprove = (id: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setExpenses(prev => prev.map(e => e.id === id ? { ...e, status: "approved" as const } : e));
+    updateLedgerItemStatus(id, "approved");
   };
 
   const handleReject = (id: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    setExpenses(prev => prev.map(e => e.id === id ? { ...e, status: "rejected" as const } : e));
+    updateLedgerItemStatus(id, "rejected");
   };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text style={{ color: theme.textSecondary }}>Loading dashboard...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -213,7 +254,7 @@ export function BusinessDashboard() {
           <View>
             <Text style={styles.summaryLabel}>Budget Used</Text>
             <Text style={styles.summaryValue}>
-              ${BUDGET_DATA.used.toLocaleString()} / ${BUDGET_DATA.total.toLocaleString()}
+              ${budgetData.used.toLocaleString()} / ${budgetData.total.toLocaleString()}
             </Text>
           </View>
           <View style={styles.summaryRight}>
@@ -225,7 +266,7 @@ export function BusinessDashboard() {
           <View
             style={[
               styles.overallFill,
-              { width: `${(BUDGET_DATA.used / BUDGET_DATA.total) * 100}%` },
+              { width: `${Math.min((budgetData.used / budgetData.total) * 100, 100)}%` },
             ]}
           />
         </View>
@@ -241,15 +282,15 @@ export function BusinessDashboard() {
         <MetricCard
           icon={<CheckCircle size={20} color="#22C55E" />}
           title="Approved"
-          value="24"
-          change="+12%"
+          value={approvedCount.toString()}
+          change={complianceStats.blockedCount === 0 ? "+12%" : undefined}
           changeType="up"
           delay={150}
         />
         <MetricCard
           icon={<Users size={20} color="#3B82F6" />}
           title="Active"
-          value="8"
+          value={activeMembers.length.toString()}
           delay={200}
         />
       </View>
@@ -257,7 +298,7 @@ export function BusinessDashboard() {
       <Animated.View entering={FadeInDown.delay(250).duration(400)}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Budget by Category</Text>
         <View style={[styles.budgetCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-          {BUDGET_DATA.categories.map((cat, index) => (
+          {budgetData.categories.filter(c => c.used > 0 || c.budget > 0).slice(0, 4).map((cat, index) => (
             <BudgetProgress key={cat.name} category={cat} delay={300 + index * 50} />
           ))}
         </View>
@@ -270,15 +311,22 @@ export function BusinessDashboard() {
             <Text style={{ color: "#5533FF", fontWeight: "600" }}>View All</Text>
           </Pressable>
         </View>
-        {expenses.filter(e => e.status === "pending").map((expense, index) => (
-          <Animated.View key={expense.id} entering={FadeInDown.delay(450 + index * 50).duration(400)}>
-            <ExpenseCard
-              expense={expense}
-              onApprove={() => handleApprove(expense.id)}
-              onReject={() => handleReject(expense.id)}
-            />
-          </Animated.View>
-        ))}
+        {expenses.filter(e => e.status === "pending").length === 0 ? (
+          <View style={[styles.emptyState, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <CheckCircle size={32} color="#22C55E" />
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>All caught up! No pending approvals.</Text>
+          </View>
+        ) : (
+          expenses.filter(e => e.status === "pending").slice(0, 5).map((expense, index) => (
+            <Animated.View key={expense.id} entering={FadeInDown.delay(450 + index * 50).duration(400)}>
+              <ExpenseCard
+                expense={expense}
+                onApprove={() => handleApprove(expense.id)}
+                onReject={() => handleReject(expense.id)}
+              />
+            </Animated.View>
+          ))
+        )}
       </Animated.View>
     </View>
   );
@@ -482,6 +530,18 @@ const styles = StyleSheet.create({
   approveText: {
     color: "#FFFFFF",
     fontWeight: "600",
+  },
+  emptyState: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.md,
+  },
+  emptyText: {
+    fontSize: 14,
+    textAlign: "center",
   },
 });
 

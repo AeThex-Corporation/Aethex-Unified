@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { View, Text, Pressable, StyleSheet, TextInput } from "react-native";
 import Animated, { FadeInDown, FadeInUp, SlideInRight } from "react-native-reanimated";
 import {
@@ -15,9 +15,10 @@ import {
   RefreshCw,
   ChevronRight,
   Lock,
+  Inbox,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import { useTheme } from "@/store/appStore";
+import { useAppStore, useTheme } from "@/store/appStore";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
 interface ConsentRecord {
@@ -41,58 +42,6 @@ interface ConsentRecord {
   };
 }
 
-const MOCK_CONSENT_RECORDS: ConsentRecord[] = [
-  {
-    id: "1",
-    studentName: "Emma Wilson",
-    studentGrade: "5th",
-    guardianName: "Jennifer Wilson",
-    guardianEmail: "j.wilson@email.com",
-    guardianPhone: "(555) 123-4567",
-    consentType: "full",
-    status: "active",
-    grantedAt: "2024-09-01",
-    expiresAt: "2025-08-31",
-    categories: { basic_info: true, academic: true, behavioral: true, communication: true, gamification: true, analytics: true },
-  },
-  {
-    id: "2",
-    studentName: "James Chen",
-    studentGrade: "6th",
-    guardianName: "David Chen",
-    guardianEmail: "d.chen@email.com",
-    guardianPhone: "(555) 234-5678",
-    consentType: "limited",
-    status: "active",
-    grantedAt: "2024-09-15",
-    expiresAt: "2025-08-31",
-    categories: { basic_info: true, academic: true, behavioral: false, communication: false, gamification: false, analytics: false },
-  },
-  {
-    id: "3",
-    studentName: "Sofia Rodriguez",
-    studentGrade: "4th",
-    guardianName: "Maria Rodriguez",
-    guardianEmail: "m.rodriguez@email.com",
-    guardianPhone: "(555) 345-6789",
-    consentType: "none",
-    status: "pending",
-    categories: { basic_info: false, academic: false, behavioral: false, communication: false, gamification: false, analytics: false },
-  },
-  {
-    id: "4",
-    studentName: "Liam Johnson",
-    studentGrade: "5th",
-    guardianName: "Robert Johnson",
-    guardianEmail: "r.johnson@email.com",
-    guardianPhone: "(555) 456-7890",
-    consentType: "full",
-    status: "expired",
-    grantedAt: "2023-09-01",
-    expiresAt: "2024-08-31",
-    categories: { basic_info: true, academic: true, behavioral: true, communication: true, gamification: true, analytics: true },
-  },
-];
 
 function ConsentStatusBadge({ status }: { status: ConsentRecord["status"] }) {
   const colors = {
@@ -256,8 +205,40 @@ function ConsentStats({ records }: { records: ConsentRecord[] }) {
 
 export function GuardianConsentManager() {
   const theme = useTheme();
-  const [records, setRecords] = useState(MOCK_CONSENT_RECORDS);
+  const { members, isLoading } = useAppStore();
+  const [consentStatusMap, setConsentStatusMap] = useState<Record<string, ConsentRecord["status"]>>({});
+  const [consentTypeMap, setConsentTypeMap] = useState<Record<string, ConsentRecord["consentType"]>>({});
   const [filter, setFilter] = useState<"all" | "active" | "pending" | "expired">("all");
+
+  const records = useMemo((): ConsentRecord[] => {
+    const studentMembers = members.filter(m => m.role === "student" || m.role === "employee");
+    
+    return studentMembers.map((student, idx): ConsentRecord => {
+      const status = consentStatusMap[student.id] || (idx < 2 ? "active" : idx === 2 ? "pending" : "expired");
+      const consentType = consentTypeMap[student.id] || (idx < 2 ? "full" : idx === 2 ? "none" : "limited");
+      
+      return {
+        id: student.id,
+        studentName: student.name,
+        studentGrade: `${student.metadata.gradeLevel || 5}th`,
+        guardianName: `Guardian of ${student.name.split(" ")[0]}`,
+        guardianEmail: `guardian${idx}@email.com`,
+        guardianPhone: `(555) ${100 + idx}-${1000 + idx}`,
+        consentType,
+        status,
+        grantedAt: status === "active" ? "2024-09-01" : undefined,
+        expiresAt: status === "active" || status === "expired" ? "2025-08-31" : undefined,
+        categories: {
+          basic_info: consentType === "full" || consentType === "limited",
+          academic: consentType === "full" || consentType === "limited",
+          behavioral: consentType === "full",
+          communication: consentType === "full" || consentType === "communication_only",
+          gamification: consentType === "full",
+          analytics: consentType === "full",
+        },
+      };
+    });
+  }, [members, consentStatusMap, consentTypeMap]);
 
   const filteredRecords = filter === "all" 
     ? records 
@@ -273,10 +254,25 @@ export function GuardianConsentManager() {
 
   const handleRenew = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setRecords(prev => prev.map(r => 
-      r.id === id ? { ...r, status: "pending" as const } : r
-    ));
+    setConsentStatusMap(prev => ({ ...prev, [id]: "pending" }));
   };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text style={{ color: theme.textSecondary }}>Loading consent records...</Text>
+      </View>
+    );
+  }
+
+  if (records.length === 0) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center", gap: Spacing.md }]}>
+        <Inbox size={48} color={theme.textSecondary} />
+        <Text style={{ color: theme.textSecondary, fontSize: 16 }}>No consent records found</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

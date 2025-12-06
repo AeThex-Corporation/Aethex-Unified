@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, Pressable, StyleSheet, TextInput } from "react-native";
 import Animated, {
   FadeInDown,
@@ -43,35 +43,57 @@ interface AIMessage {
   timestamp: string;
 }
 
-function generateContextualSuggestions(marketContext: string, mode: string): Suggestion[] {
+interface StoreData {
+  pendingApprovals: number;
+  flaggedCount: number;
+  blockedCount: number;
+  activeMembers: number;
+  streak: number;
+}
+
+function generateContextualSuggestions(marketContext: string, mode: string, storeData: StoreData): Suggestion[] {
   if (marketContext === "education") {
     if (mode === "day") {
-      return [
-        { id: "1", type: "warning", title: "3 Consent Forms Expiring", description: "Guardian consent for 3 students expires this week. Send renewal reminders now.", priority: "high", actionLabel: "Send Reminders" },
-        { id: "2", type: "insight", title: "PII Protection Active", description: "12 personal information attempts blocked this month. Student data is secure.", priority: "medium" },
-        { id: "3", type: "action", title: "Review Flagged Content", description: "2 messages flagged for content review in study groups.", priority: "high", actionLabel: "Review Now" },
-        { id: "4", type: "tip", title: "Weekly Compliance Report", description: "Generate your weekly FERPA compliance report for district review.", priority: "low", actionLabel: "Generate Report" },
-      ];
+      const suggestions: Suggestion[] = [];
+      
+      if (storeData.flaggedCount > 0) {
+        suggestions.push({ id: "1", type: "warning", title: `${storeData.flaggedCount} Items Flagged`, description: "Messages or activities flagged for content review in study groups.", priority: "high", actionLabel: "Review Now" });
+      }
+      if (storeData.blockedCount > 0) {
+        suggestions.push({ id: "2", type: "insight", title: "PII Protection Active", description: `${storeData.blockedCount} personal information attempts blocked. Student data is secure.`, priority: "medium" });
+      }
+      suggestions.push({ id: "3", type: "action", title: "Consent Status Check", description: "Review guardian consent status for all students.", priority: storeData.pendingApprovals > 0 ? "high" : "low", actionLabel: "View Status" });
+      suggestions.push({ id: "4", type: "tip", title: "Weekly Compliance Report", description: "Generate your weekly FERPA compliance report for district review.", priority: "low", actionLabel: "Generate Report" });
+      
+      return suggestions;
     } else {
       return [
-        { id: "1", type: "insight", title: "Study Streak Active", description: "You're on a 5-day study streak. Keep it up to unlock the Scholar badge.", priority: "medium" },
-        { id: "2", type: "action", title: "Complete Daily Quest", description: "Finish your math practice quest to earn 50 XP before midnight.", priority: "high", actionLabel: "Start Quest" },
-        { id: "3", type: "tip", title: "Join Study Group", description: "3 classmates are online in Science Study Group. Collaborate for bonus XP.", priority: "low", actionLabel: "Join Group" },
+        { id: "1", type: "insight", title: storeData.streak > 0 ? `${storeData.streak}-Day Study Streak` : "Start a Study Streak", description: storeData.streak > 0 ? "Keep it up to unlock the Scholar badge." : "Complete a study session today to start your streak.", priority: "medium" },
+        { id: "2", type: "action", title: "Complete Daily Quest", description: "Finish your study quest to earn XP before midnight.", priority: "high", actionLabel: "Start Quest" },
+        { id: "3", type: "tip", title: "Join Study Group", description: `${storeData.activeMembers} classmates are online. Collaborate for bonus XP.`, priority: "low", actionLabel: "Join Group" },
       ];
     }
   } else {
     if (mode === "day") {
-      return [
-        { id: "1", type: "warning", title: "4 Pending Approvals", description: "Expense reports from your team are awaiting your review.", priority: "high", actionLabel: "Review Now" },
-        { id: "2", type: "insight", title: "Budget Alert", description: "Travel category is at 83% of monthly budget. Consider reviewing upcoming trips.", priority: "medium" },
-        { id: "3", type: "action", title: "Submit Monthly Report", description: "Your expense summary for December is ready for submission.", priority: "medium", actionLabel: "Submit Report" },
-        { id: "4", type: "tip", title: "Optimize Spending", description: "Switch to annual software licenses to save 20% on Software category.", priority: "low" },
+      const suggestions: Suggestion[] = [];
+      
+      if (storeData.pendingApprovals > 0) {
+        suggestions.push({ id: "1", type: "warning", title: `${storeData.pendingApprovals} Pending Approvals`, description: "Expense reports from your team are awaiting your review.", priority: "high", actionLabel: "Review Now" });
+      }
+      if (storeData.flaggedCount > 0) {
+        suggestions.push({ id: "2", type: "insight", title: "Compliance Alert", description: `${storeData.flaggedCount} items flagged for review this week.`, priority: "medium" });
+      }
+      suggestions.push({ id: "3", type: "action", title: "Submit Monthly Report", description: "Your expense summary is ready for submission.", priority: "medium", actionLabel: "Submit Report" });
+      suggestions.push({ id: "4", type: "tip", title: "Team Update", description: `${storeData.activeMembers} team members active. Review their pending requests.`, priority: "low" });
+      
+      return suggestions.length > 0 ? suggestions : [
+        { id: "1", type: "insight", title: "All Caught Up", description: "No pending approvals or alerts. Great job staying on top of things!", priority: "low" },
       ];
     } else {
       return [
         { id: "1", type: "action", title: "New Gig Match", description: "UI Design project matches 95% of your skills. Apply before 12 others.", priority: "high", actionLabel: "Quick Apply" },
         { id: "2", type: "insight", title: "Sprint Progress", description: "You're ahead of schedule on GameForge Sprint. 18 hours logged vs 15 target.", priority: "medium" },
-        { id: "3", type: "tip", title: "Skill Upgrade", description: "Complete React Advanced course to unlock higher-tier gigs.", priority: "low", actionLabel: "Start Course" },
+        { id: "3", type: "tip", title: storeData.streak > 0 ? `${storeData.streak}-Day Streak` : "Build Your Streak", description: storeData.streak > 0 ? "Keep the momentum going!" : "Complete a task today to start your streak.", priority: "low" },
         { id: "4", type: "action", title: "Withdraw Earnings", description: "$250.00 available for withdrawal. Transfer to your bank account.", priority: "medium", actionLabel: "Withdraw" },
       ];
     }
@@ -162,8 +184,20 @@ function PulsingDot() {
 
 export function AIAssistantWidget({ compact = false }: { compact?: boolean }) {
   const theme = useTheme();
-  const { marketContext, mode } = useAppStore();
-  const [suggestions] = useState(() => generateContextualSuggestions(marketContext, mode));
+  const { marketContext, mode, members, ledgerItems, getComplianceStats, gamification } = useAppStore();
+  
+  const storeData = useMemo((): StoreData => {
+    const complianceStats = getComplianceStats();
+    return {
+      pendingApprovals: ledgerItems.filter(item => item.status === "pending").length,
+      flaggedCount: complianceStats.flaggedCount,
+      blockedCount: complianceStats.blockedCount,
+      activeMembers: members.filter(m => m.status === "active").length,
+      streak: gamification?.dayStreak || 0,
+    };
+  }, [members, ledgerItems, getComplianceStats, gamification]);
+  
+  const [suggestions] = useState(() => generateContextualSuggestions(marketContext, mode, storeData));
 
   if (compact) {
     return (
