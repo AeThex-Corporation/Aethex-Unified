@@ -1,0 +1,37 @@
+That is a crucial next step. We need to integrate the core functions of the **Nexus (Monetization)** and **GameForge (Execution)** arms into the mobile app to ensure it supports the entire ecosystem.
+
+Here is the plan to advance the **AeThex Companion App** with specific, high-utility mobile features for both groups:
+
+---
+
+## **Mobile App Advancement: Integration of Nexus & GameForge**
+
+### **1. The Nexus Feature: "Gig Radar" (Monetization)**
+
+This feature is designed to directly fuel the **Talent Flywheel** (Funnel 3) by giving creators an edge in securing contracts.
+
+* **Goal:** Instant notification and one-tap application to job postings.
+* **Location:** **Night Mode** (Creator Dashboard).
+* **Feature:** **Gig Radar**
+    * **Functionality:** The app utilizes push notifications to alert the user when a new job is posted on the **`NEXUS` Marketplace** that matches their **Passport Skills** (e.g., "Synthwave Composer" or "UEFN Scripter").
+    * **UI:** A dedicated tab showing a simple list of matching opportunities. Swiping right on a listing triggers a "Quick Apply" (sending a pre-approved proposal template to the client).
+    * **Why it works:** Good jobs vanish quickly. This gives our "Architects" a speed advantage over the general freelance market.
+
+### **2. The GameForge Feature: "Sprint Countdown" (Execution)**
+
+This feature enforces the **"Execute with Excellence"** principle and the **"Kill-Gate"** philosophy on the go.
+
+* **Goal:** Provide constant, high-pressure visibility of the 30-day sprint cycle.
+* **Location:** **Night Mode** (Creator Dashboard).
+* **Feature:** **Active Sprint Status Widget**
+    * **Functionality:** A persistent card on the main dashboard showing the countdown timer for their active `GAMEFORGE` project (e.g., "**Day 12 of 30** | Kill-Gate Passed").
+    * **Integration:** The widget links directly to their embedded **Kanban board** in the mobile app, allowing for quick checks and logging of billable hours (if they are a contractor).
+    * **Why it works:** Reinforces time management and urgency—shipping is the only metric that matters.
+
+### **3. The Final Component: Shared Data Model**
+
+Both features require the mobile app to communicate with the **`aethex.dev`** Monolith API to fetch:
+* The user's **Skills/Tags** (for filtering the Gig Radar).
+* The **Active Project Deadline** (for the Sprint Countdown).
+
+This makes the mobile app a functional "Remote Control" for the entire ecosystem.
