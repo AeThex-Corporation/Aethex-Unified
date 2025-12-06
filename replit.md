@@ -207,7 +207,43 @@ Scan the QR code with Expo Go to test on a physical device.
 - **Feature Graphic**: `attached_assets/generated_images/play_store_feature_graphic.png` (1024x500)
 - **Bundle ID**: `com.aethex.companion`
 
-## Recent Changes (2025-11-28)
+## Nexus Integration (Night Mode - Business)
+
+### Gig Radar (`components/GigRadar.tsx`)
+- Real-time job matching based on Passport Skills
+- Push notification ready (when backend connected)
+- Swipe-right quick-apply gesture
+- Match score percentage display
+- Urgency indicators (normal/high/urgent)
+
+### Sprint Countdown (`components/SprintCountdown.tsx`)
+- 30-day GameForge sprint timer
+- Kill-Gate status indicator (Day 7 checkpoint)
+- Hours logged vs target tracking
+- Next milestone display
+- Kanban board link (ready for integration)
+
+### NexusService (`services/nexusService.ts`)
+- Mock data for gigs, sprints, and Passport skills
+- API-ready structure for aethex.dev integration
+- Skill matching algorithm
+- Quick-apply state management
+
+## Simplified Login
+
+Two primary entry points (no complex role selection):
+1. **"Sign In with AeThex Passport"** → Business context (creators, staff)
+2. **"Sign In with District Credentials"** → Education context (students, admins)
+
+## Recent Changes (2025-12-06)
+
+1. **Simplified login screen** - Two entry points only (Passport + District)
+2. **Added Gig Radar** - Swipe-to-apply job matching in Night Mode
+3. **Added Sprint Countdown** - 30-day GameForge timer with Kill-Gate status
+4. **Created NexusService** - API layer for skills, gigs, and sprint data
+5. Fixed Supabase client error with graceful mock data fallback
+
+## Previous Changes (2025-11-28)
 
 1. Added unified domain models in `types/domain.ts`
 2. Created `ConfigurationService` for market context switching

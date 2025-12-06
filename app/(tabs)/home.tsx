@@ -20,6 +20,8 @@ import {
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppStore, useTheme, useTerminology, useFeatures } from "@/store/appStore";
+import SprintCountdown from "@/components/SprintCountdown";
+import GigRadar from "@/components/GigRadar";
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -383,19 +385,96 @@ function DayModeHome() {
 function NightModeHome() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { marketContext, ledgerItems, events, getTotalXP, skillNodes } = useAppStore();
-  const terminology = useTerminology();
+  const { marketContext, events, getTotalXP, skillNodes } = useAppStore();
   const features = useFeatures();
 
   const isEducation = marketContext === "education";
   const totalXP = getTotalXP();
   const unlockedSkills = skillNodes.filter(s => s.isUnlocked).length;
 
-  const bounties = ledgerItems.filter(item => 
-    item.type === "bounty" || item.type === "assignment"
-  );
+  if (!isEducation) {
+    return (
+      <ScrollView
+        style={{ flex: 1, backgroundColor: theme.background }}
+        contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 100 }}
+      >
+        <SprintCountdown />
+        <GigRadar />
 
-  const activeBounties = bounties.filter(item => item.status === "pending");
+        {events.filter(e => e.gamification.isUnlocked).length > 0 && (
+          <>
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "600",
+                color: theme.text,
+                marginTop: 24,
+                marginBottom: 16,
+              }}
+            >
+              Recent Achievements
+            </Text>
+
+            {events
+              .filter(e => e.gamification.isUnlocked)
+              .slice(0, 3)
+              .map((event, index) => (
+                <Animated.View 
+                  key={event.id} 
+                  entering={FadeInDown.delay(400 + index * 50).duration(400)}
+                >
+                  <View
+                    style={{
+                      backgroundColor: "#1a1a24",
+                      borderRadius: 16,
+                      padding: 16,
+                      marginBottom: 12,
+                      borderWidth: 1,
+                      borderColor: "#22c55e40",
+                      flexDirection: "row",
+                      alignItems: "center",
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        backgroundColor: "#22c55e20",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Zap size={20} color="#22c55e" />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={{ fontSize: 15, fontWeight: "600", color: theme.text }}>
+                        {event.gamification.skillName}
+                      </Text>
+                      <Text style={{ fontSize: 13, color: theme.textSecondary }}>
+                        +{event.gamification.xp} XP - {event.gamification.tier.replace("_", " ")}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        backgroundColor: "#22c55e20",
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 4,
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, color: "#22c55e", fontWeight: "600" }}>
+                        UNLOCKED
+                      </Text>
+                    </View>
+                  </View>
+                </Animated.View>
+              ))}
+          </>
+        )}
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView
@@ -405,30 +484,27 @@ function NightModeHome() {
       <Animated.View entering={FadeInDown.duration(400)}>
         <View
           style={{
-            backgroundColor: "#22c55e",
+            backgroundColor: "#8b5cf6",
             borderRadius: 20,
             padding: 20,
             marginBottom: 20,
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-            <Zap size={24} color="#0B0A0F" />
+            <Zap size={24} color="#FFFFFF" />
             <Text
               style={{
                 fontSize: 18,
                 fontWeight: "600",
-                color: "#0B0A0F",
+                color: "#FFFFFF",
                 marginLeft: 10,
               }}
             >
-              {isEducation ? "Skill Progress" : "Hot Bounties"}
+              Skill Progress
             </Text>
           </View>
-          <Text style={{ fontSize: 14, color: "#0B0A0F" }}>
-            {isEducation 
-              ? `${totalXP} XP earned - ${unlockedSkills} skills unlocked`
-              : `${activeBounties.length} active opportunities available`
-            }
+          <Text style={{ fontSize: 14, color: "#E9D5FF" }}>
+            {totalXP} XP earned - {unlockedSkills} skills unlocked
           </Text>
         </View>
       </Animated.View>
@@ -462,69 +538,26 @@ function NightModeHome() {
           marginBottom: 16,
         }}
       >
-        {isEducation ? "Active Assignments" : "Available Bounties"}
+        Active Assignments
       </Text>
 
       <View style={{ gap: 12 }}>
-        {isEducation ? (
-          <>
-            <ItemCard
-              icon={<BookOpen size={24} color="#8b5cf6" />}
-              title="Network Security Fundamentals"
-              category="Computer Science"
-              status="Due in 3 days"
-              color="#8b5cf6"
-              delay={200}
-            />
-            <ItemCard
-              icon={<Code size={24} color="#22c55e" />}
-              title="Python Data Structures"
-              category="Programming"
-              status="Due in 1 week"
-              color="#22c55e"
-              delay={250}
-            />
-          </>
-        ) : (
-          <>
-            <ItemCard
-              icon={<Music size={24} color="#ec4899" />}
-              title="Synthwave Track Production"
-              reward="$500"
-              category="Audio"
-              status="Due in 3 days"
-              color="#ec4899"
-              delay={200}
-            />
-            <ItemCard
-              icon={<Gamepad2 size={24} color="#8b5cf6" />}
-              title="GameForge Sprint Update"
-              reward="$1,200"
-              category="Game Dev"
-              status="Due in 1 week"
-              color="#8b5cf6"
-              delay={250}
-            />
-            <ItemCard
-              icon={<Code size={24} color="#22c55e" />}
-              title="Smart Contract Audit"
-              reward="$2,000"
-              category="Web3"
-              status="Urgent"
-              color="#22c55e"
-              delay={300}
-            />
-            <ItemCard
-              icon={<TrendingUp size={24} color="#f59e0b" />}
-              title="Data Visualization Dashboard"
-              reward="$800"
-              category="Frontend"
-              status="Due in 5 days"
-              color="#f59e0b"
-              delay={350}
-            />
-          </>
-        )}
+        <ItemCard
+          icon={<BookOpen size={24} color="#8b5cf6" />}
+          title="Network Security Fundamentals"
+          category="Computer Science"
+          status="Due in 3 days"
+          color="#8b5cf6"
+          delay={200}
+        />
+        <ItemCard
+          icon={<Code size={24} color="#22c55e" />}
+          title="Python Data Structures"
+          category="Programming"
+          status="Due in 1 week"
+          color="#22c55e"
+          delay={250}
+        />
       </View>
 
       {events.filter(e => e.gamification.isUnlocked).length > 0 && (
@@ -556,7 +589,7 @@ function NightModeHome() {
                     padding: 16,
                     marginBottom: 12,
                     borderWidth: 1,
-                    borderColor: "#22c55e40",
+                    borderColor: "#8b5cf640",
                     flexDirection: "row",
                     alignItems: "center",
                   }}
@@ -566,12 +599,12 @@ function NightModeHome() {
                       width: 40,
                       height: 40,
                       borderRadius: 20,
-                      backgroundColor: "#22c55e20",
+                      backgroundColor: "#8b5cf620",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
-                    <Zap size={20} color="#22c55e" />
+                    <Zap size={20} color="#8b5cf6" />
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={{ fontSize: 15, fontWeight: "600", color: theme.text }}>
@@ -583,13 +616,13 @@ function NightModeHome() {
                   </View>
                   <View
                     style={{
-                      backgroundColor: "#22c55e20",
+                      backgroundColor: "#8b5cf620",
                       paddingHorizontal: 8,
                       paddingVertical: 4,
                       borderRadius: 4,
                     }}
                   >
-                    <Text style={{ fontSize: 12, color: "#22c55e", fontWeight: "600" }}>
+                    <Text style={{ fontSize: 12, color: "#8b5cf6", fontWeight: "600" }}>
                       UNLOCKED
                     </Text>
                   </View>
