@@ -26,11 +26,19 @@ function RootLayoutNav() {
     checkOnboarding();
   }, []);
 
+  // Re-check onboarding when navigation segments change (to detect completion)
+  useEffect(() => {
+    if (hasCheckedOnboarding) {
+      checkOnboarding();
+    }
+  }, [segments]);
+
   const checkOnboarding = async () => {
     try {
       const completed = await AsyncStorage.getItem("aethex_onboarding_complete");
       const altCompleted = await AsyncStorage.getItem("@aethex:onboarding_complete");
-      setNeedsOnboarding(completed !== "true" && altCompleted !== "true");
+      const isComplete = completed === "true" || altCompleted === "true";
+      setNeedsOnboarding(!isComplete);
       setHasCheckedOnboarding(true);
     } catch (e) {
       setNeedsOnboarding(false);

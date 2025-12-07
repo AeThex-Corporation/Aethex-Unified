@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ScrollView,
 } from "react-native";
 import { router } from "expo-router";
 import { 
@@ -30,6 +31,21 @@ import * as Haptics from "expo-haptics";
 import { useAppStore } from "@/store/appStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MarketContext } from "@/types/domain";
+
+const getShadowStyle = (color: string, offset = 4, radius = 16, opacity = 0.4) => {
+  if (Platform.OS === "web") {
+    return {
+      boxShadow: `0px ${offset}px ${radius}px rgba(${parseInt(color.slice(1, 3), 16)}, ${parseInt(color.slice(3, 5), 16)}, ${parseInt(color.slice(5, 7), 16)}, ${opacity})`,
+    };
+  }
+  return {
+    shadowColor: color,
+    shadowOffset: { width: 0, height: offset },
+    shadowOpacity: opacity,
+    shadowRadius: radius,
+    elevation: 8,
+  };
+};
 
 type LoginMethod = null | "passport" | "district";
 
@@ -87,10 +103,7 @@ export default function LoginScreen() {
           flexDirection: "row",
           alignItems: "center",
           gap: 16,
-          shadowColor: "#5533FF",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 12,
+          ...getShadowStyle("#5533FF", 4, 12, 0.3),
         })}
       >
         <View
@@ -300,10 +313,7 @@ export default function LoginScreen() {
           flexDirection: "row",
           gap: 8,
           opacity: pressed || isLoading ? 0.8 : 1,
-          shadowColor: "#5533FF",
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.4,
-          shadowRadius: 20,
+          ...getShadowStyle("#5533FF", 0, 20, 0.4),
         })}
       >
         <Fingerprint size={20} color="#F8FAFC" />
@@ -578,70 +588,65 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1 }}
     >
-      <View
+      <ScrollView
         style={{
           flex: 1,
           backgroundColor: "#020817",
-          paddingTop: insets.top,
-          paddingBottom: insets.bottom,
         }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: "center",
+          paddingHorizontal: 24,
+          paddingTop: insets.top + 20,
+          paddingBottom: insets.bottom + 40,
+        }}
+        keyboardShouldPersistTaps="handled"
       >
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            paddingHorizontal: 24,
-          }}
+        <Animated.View
+          entering={FadeInUp.delay(100).duration(600)}
+          style={{ alignItems: "center", marginBottom: 40 }}
         >
-          <Animated.View
-            entering={FadeInUp.delay(100).duration(600)}
-            style={{ alignItems: "center", marginBottom: 40 }}
+          <View
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: 20,
+              backgroundColor: "#5533FF",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 24,
+              ...getShadowStyle("#5533FF", 4, 16, 0.4),
+            }}
           >
-            <View
-              style={{
-                width: 80,
-                height: 80,
-                borderRadius: 20,
-                backgroundColor: "#5533FF",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 24,
-                shadowColor: "#5533FF",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.4,
-                shadowRadius: 16,
-              }}
-            >
-              <Shield size={40} color="#F8FAFC" strokeWidth={2.5} />
-            </View>
-            <Text
-              style={{
-                fontSize: 32,
-                fontWeight: "700",
-                color: "#f8fafc",
-                marginBottom: 8,
-              }}
-            >
-              AeThex Companion
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                color: "#94a3b8",
-                textAlign: "center",
-              }}
-            >
-              Compliance meets creation
-            </Text>
-          </Animated.View>
+            <Shield size={40} color="#F8FAFC" strokeWidth={2.5} />
+          </View>
+          <Text
+            style={{
+              fontSize: 32,
+              fontWeight: "700",
+              color: "#f8fafc",
+              marginBottom: 8,
+            }}
+          >
+            AeThex Companion
+          </Text>
+          <Text
+            style={{
+              fontSize: 16,
+              color: "#94a3b8",
+              textAlign: "center",
+            }}
+          >
+            Compliance meets creation
+          </Text>
+        </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(200).duration(600)}>
-            {loginMethod === null && renderMethodSelection()}
-            {loginMethod === "passport" && renderPassportLogin()}
-            {loginMethod === "district" && renderDistrictLogin()}
-          </Animated.View>
-        </View>
-      </View>
+        <Animated.View entering={FadeInDown.delay(200).duration(600)}>
+          {loginMethod === null && renderMethodSelection()}
+          {loginMethod === "passport" && renderPassportLogin()}
+          {loginMethod === "district" && renderDistrictLogin()}
+        </Animated.View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
