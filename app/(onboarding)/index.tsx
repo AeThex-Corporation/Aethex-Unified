@@ -108,7 +108,7 @@ function SlideContent({ slide, index, currentIndex }: {
   }));
 
   return (
-    <View style={[styles.slideContent, { width: SCREEN_WIDTH }]}>
+    <View style={styles.slideContent}>
       <Animated.View
         style={[
           styles.iconContainer,
@@ -149,12 +149,13 @@ export default function OnboardingScreen() {
     try {
       await AsyncStorage.setItem("aethex_onboarding_complete", "true");
       await AsyncStorage.setItem("@aethex:onboarding_complete", "true");
+      // Navigate directly - the root layout will validate this is correct
+      router.replace("/(auth)/login");
     } catch (e) {
       console.warn("Failed to save onboarding state:", e);
-    }
-    setTimeout(() => {
+      // Still try to navigate even if storage fails
       router.replace("/(auth)/login");
-    }, 100);
+    }
   };
 
   const goToSlide = (index: number) => {
@@ -214,18 +215,20 @@ export default function OnboardingScreen() {
         </Pressable>
       </View>
 
-      <GestureDetector gesture={pan}>
-        <Animated.View style={[styles.slidesContainer, slidesStyle]}>
-          {SLIDES.map((slide, index) => (
-            <SlideContent
-              key={slide.id}
-              slide={slide}
-              index={index}
-              currentIndex={currentIndex}
-            />
-          ))}
-        </Animated.View>
-      </GestureDetector>
+      <View style={styles.slidesViewport}>
+        <GestureDetector gesture={pan}>
+          <Animated.View style={[styles.slidesContainer, slidesStyle]}>
+            {SLIDES.map((slide, index) => (
+              <SlideContent
+                key={slide.id}
+                slide={slide}
+                index={index}
+                currentIndex={currentIndex}
+              />
+            ))}
+          </Animated.View>
+        </GestureDetector>
+      </View>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.xl }]}>
         <View style={styles.pagination}>
@@ -281,12 +284,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
-  slidesContainer: {
+  slidesViewport: {
     flex: 1,
+    width: SCREEN_WIDTH,
+    overflow: "hidden",
+  },
+  slidesContainer: {
     flexDirection: "row",
+    width: SCREEN_WIDTH * SLIDES.length,
   },
   slideContent: {
-    flex: 1,
+    width: SCREEN_WIDTH,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: Spacing["3xl"],

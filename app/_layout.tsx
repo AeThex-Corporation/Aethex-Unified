@@ -57,13 +57,24 @@ function RootLayoutNav() {
 
     const inAuthGroup = segments[0] === "(auth)";
     const inOnboarding = segments[0] === "(onboarding)";
+    const inTabs = segments[0] === "(tabs)";
 
+    // User needs to complete onboarding first
     if (needsOnboarding && !inOnboarding) {
-      setTimeout(() => router.replace("/(onboarding)"), 0);
-    } else if (!needsOnboarding && isAuthenticated && inAuthGroup) {
-      setTimeout(() => router.replace("/(tabs)/home"), 0);
-    } else if (!needsOnboarding && !isAuthenticated && !inAuthGroup && !inOnboarding) {
-      setTimeout(() => router.replace("/(auth)/login"), 0);
+      router.replace("/(onboarding)");
+      return;
+    }
+    
+    // Onboarding complete - handle auth routing
+    if (!needsOnboarding) {
+      // Authenticated users go to home if in auth or onboarding
+      if (isAuthenticated && (inAuthGroup || inOnboarding)) {
+        router.replace("/(tabs)/home");
+      } 
+      // Non-authenticated users go to login if not already there
+      else if (!isAuthenticated && !inAuthGroup) {
+        router.replace("/(auth)/login");
+      }
     }
   }, [isLoading, isAuthenticated, segments, isMounted, hasCheckedOnboarding, showSplash, needsOnboarding]);
 
