@@ -295,6 +295,15 @@ Route: `app/(onboarding)/index.tsx`
 - Pagination dots with tap navigation
 - Stored in AsyncStorage: "aethex_onboarding_complete"
 
+## Recent Changes (2025-12-07)
+
+1. **Fixed onboarding exit issue** - Root layout now re-checks AsyncStorage when segments change, allowing proper navigation to login
+2. **Fixed login screen layout** - Using ScrollView for better keyboard handling and responsive layout
+3. **Fixed shadow style deprecations** - Added getShadowStyle() helper that uses boxShadow on web, native shadows on iOS/Android
+4. **Complete data wiring** - All dashboard components (BusinessDashboard, K12AdminDashboard, GuardianConsentManager, AIAssistant) now derive data from Zustand store instead of hardcoded mocks
+5. **Added empty states** - All dashboards show proper UI when data arrays are empty
+6. **Loading state handling** - Components properly guard on store's isLoading flag
+
 ## Recent Changes (2025-12-06)
 
 1. **Simplified login screen** - Two entry points only (Passport + District)
