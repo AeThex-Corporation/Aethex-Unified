@@ -12,21 +12,31 @@ import { GlassCard } from "@/components/GlassCard";
 import { StudentDashboard } from "@/components/StudentNightMode";
 import { BusinessDashboard } from "@/components/BusinessDashboard";
 import { K12AdminDashboard } from "@/components/K12AdminDashboard";
+import { FoundationDayDashboard, FoundationNightDashboard } from "@/components/FoundationDashboard";
+import { StudioDayDashboard, StudioNightDashboard } from "@/components/StudioDashboard";
 import { Spacing } from "@/constants/theme";
 
 function DayModeHome() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { marketContext } = useAppStore();
+  const { marketContext, currentPillar } = useAppStore();
 
-  const isEducation = marketContext === "education";
+  const getDashboard = () => {
+    switch (currentPillar) {
+      case "foundation": return <FoundationDayDashboard />;
+      case "studio": return <StudioDayDashboard />;
+      case "dev": 
+      default:
+        return marketContext === "education" ? <K12AdminDashboard /> : <BusinessDashboard />;
+    }
+  };
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.background }}
       contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 100 }}
     >
-      {isEducation ? <K12AdminDashboard /> : <BusinessDashboard />}
+      {getDashboard()}
     </ScrollView>
   );
 }
@@ -34,11 +44,33 @@ function DayModeHome() {
 function NightModeHome() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { marketContext, events } = useAppStore();
+  const { marketContext, currentPillar, events } = useAppStore();
 
-  const isEducation = marketContext === "education";
+  const getPillarDashboard = () => {
+    switch (currentPillar) {
+      case "foundation":
+        return <FoundationNightDashboard />;
+      case "studio":
+        return <StudioNightDashboard />;
+      case "dev":
+      default:
+        return null;
+    }
+  };
 
-  if (isEducation) {
+  const pillarDashboard = getPillarDashboard();
+  if (pillarDashboard) {
+    return (
+      <ScrollView
+        style={{ flex: 1, backgroundColor: theme.background }}
+        contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 100 }}
+      >
+        {pillarDashboard}
+      </ScrollView>
+    );
+  }
+
+  if (marketContext === "education") {
     return (
       <ScrollView
         style={{ flex: 1, backgroundColor: theme.background }}
