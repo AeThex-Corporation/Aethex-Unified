@@ -1,9 +1,134 @@
 export type MarketContext = "business" | "education";
 export type AppMode = "day" | "night";
 
+export type EcosystemPillar = "dev" | "studio" | "foundation";
+
 export type MemberRole = 
   | "owner" | "manager" | "employee" | "vendor" | "contractor"
-  | "admin" | "teacher" | "student" | "guardian" | "staff";
+  | "admin" | "teacher" | "student" | "guardian" | "staff"
+  | "developer" | "api_user" | "community_member"
+  | "foundry_student" | "client" | "investor"
+  | "donor" | "voter" | "council_member";
+
+export interface ReputationScore {
+  pillar: EcosystemPillar;
+  score: number;
+  level: number;
+  contributions: number;
+  lastUpdated: string;
+}
+
+export interface Grant {
+  id: string;
+  title: string;
+  description: string;
+  amount: number;
+  currency: string;
+  status: "proposed" | "voting" | "approved" | "in_progress" | "completed" | "rejected";
+  proposedBy: string;
+  proposedAt: string;
+  votesFor: number;
+  votesAgainst: number;
+  votingEndsAt?: string;
+  executedBy?: string;
+  showcasedAt?: string;
+  ipChain: IPAttributionNode[];
+  metadata: Record<string, unknown>;
+}
+
+export interface IPAttributionNode {
+  id: string;
+  pillar: EcosystemPillar;
+  type: "grant" | "build" | "showcase";
+  title: string;
+  contributor: string;
+  timestamp: string;
+  parentId?: string;
+}
+
+export interface PortfolioItem {
+  id: string;
+  title: string;
+  description: string;
+  category: "game" | "app" | "tool" | "api" | "design" | "other";
+  thumbnailUrl?: string;
+  projectUrl?: string;
+  createdBy: string[];
+  skills: string[];
+  featured: boolean;
+  grantId?: string;
+  metrics: {
+    views: number;
+    likes: number;
+    shares: number;
+  };
+  createdAt: string;
+}
+
+export interface MentorshipMatch {
+  id: string;
+  mentorId: string;
+  mentorName: string;
+  menteeId: string;
+  menteeName: string;
+  skillFocus: string[];
+  status: "pending" | "active" | "completed" | "cancelled";
+  sessionsCompleted: number;
+  nextSessionAt?: string;
+  xpEarned: number;
+  createdAt: string;
+}
+
+export interface CrossPillarQuest {
+  id: string;
+  title: string;
+  description: string;
+  pillars: EcosystemPillar[];
+  steps: QuestStep[];
+  xpReward: number;
+  reputationReward: { pillar: EcosystemPillar; amount: number }[];
+  difficulty: "beginner" | "intermediate" | "advanced";
+  status: "available" | "in_progress" | "completed";
+  completedSteps: number;
+  deadline?: string;
+}
+
+export interface QuestStep {
+  id: string;
+  pillar: EcosystemPillar;
+  action: string;
+  description: string;
+  completed: boolean;
+  completedAt?: string;
+}
+
+export interface EcosystemPulse {
+  timestamp: string;
+  dev: {
+    activeGigs: number;
+    apiUptime: number;
+    forumPosts: number;
+    activeDevelopers: number;
+  };
+  studio: {
+    foundryStudents: number;
+    portfolioItems: number;
+    activeClients: number;
+    projectsInProgress: number;
+  };
+  foundation: {
+    activeGrants: number;
+    totalDonated: number;
+    pendingVotes: number;
+    councilMembers: number;
+  };
+  overall: {
+    totalMembers: number;
+    weeklyActiveUsers: number;
+    crossPillarQuests: number;
+    mentorshipMatches: number;
+  };
+}
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 export type ComplianceStatus = "ALLOWED" | "FLAGGED" | "BLOCKED" | "QUARANTINED" | "PENDING";

@@ -1,12 +1,13 @@
-# AeThex Companion - Hybrid Dual-Mode Compliance Platform
+# AeThex Companion - Three-Pillar Ecosystem Platform
 
 ## Overview
-AeThex Companion is a React Native (Expo) mobile application that serves TWO market contexts with a unified architecture:
+AeThex Companion is a React Native (Expo) mobile application serving the entire AeThex ecosystem through THREE pillars:
 
-1. **Small Business** - Day Mode (enterprise compliance/finance) + Night Mode (creator/freelance economy)
-2. **K-12 EdTech** - Day Mode (admin/teacher oversight) + Night Mode (student engagement)
+1. **Dev (aethex.dev)** - Developers, API users, community members
+2. **Studio (aethex.studio)** - Foundry students, clients, investors  
+3. **Foundation (aethex.foundation)** - Council members, donors, voters
 
-The app uses a configuration-driven architecture with a shared compliance layer (PII detection, audit logging) that adapts terminology, features, and compliance rules based on market context.
+The app maintains backward compatibility with legacy Business/K-12 contexts while introducing pillar-based architecture. Uses configuration-driven design with shared compliance layer (PII detection, audit logging) that adapts terminology, features, and compliance rules based on pillar selection.
 
 ## Project Structure
 

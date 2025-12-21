@@ -10,7 +10,8 @@ import {
   AuditLogEntry,
   SkillNode,
   ChatMessage,
-  ComplianceCase 
+  ComplianceCase,
+  EcosystemPillar 
 } from "../types/domain";
 import { configService, MarketConfiguration } from "../services/configurationService";
 import { complianceService } from "../services/complianceService";
@@ -21,6 +22,11 @@ import {
   getOrganizationForContext,
   getEventsForContext,
   getAuditLogsForContext,
+  getMembersForPillar,
+  getLedgerItemsForPillar,
+  getOrganizationForPillar,
+  getEventsForPillar,
+  getAuditLogsForPillar,
   SKILL_NODES,
   SAMPLE_CHAT_MESSAGES 
 } from "../services/mockData";
@@ -28,6 +34,7 @@ import {
 interface AppState {
   mode: AppMode;
   marketContext: MarketContext;
+  currentPillar: EcosystemPillar;
   currentMember: Member | null;
   organization: Organization | null;
   members: Member[];
@@ -44,7 +51,9 @@ interface AppState {
   setMode: (mode: AppMode) => void;
   toggleMode: () => void;
   setMarketContext: (context: MarketContext) => void;
+  setPillar: (pillar: EcosystemPillar) => void;
   login: (username: string, context?: MarketContext) => Promise<boolean>;
+  loginWithPillar: (username: string, pillar: EcosystemPillar) => Promise<boolean>;
   logout: () => void;
   loadSession: () => Promise<void>;
   
@@ -60,6 +69,7 @@ interface AppState {
 export const useAppStore = create<AppState>((set, get) => ({
   mode: "day",
   marketContext: "business",
+  currentPillar: "dev",
   currentMember: null,
   organization: null,
   members: [],
@@ -103,6 +113,30 @@ export const useAppStore = create<AppState>((set, get) => ({
       auditLogs,
     });
     AsyncStorage.setItem("aethex_context", context);
+  },
+
+  setPillar: (pillar) => {
+    configService.setPillar(pillar);
+    const config = configService.getConfig();
+    const organization = getOrganizationForPillar(pillar);
+    const members = getMembersForPillar(pillar);
+    const ledgerItems = getLedgerItemsForPillar(pillar);
+    const events = getEventsForPillar(pillar);
+    const auditLogs = getAuditLogsForPillar(pillar);
+    const marketContext = pillar === "studio" ? "education" : "business";
+
+    set({ 
+      currentPillar: pillar,
+      marketContext,
+      config,
+      organization,
+      members,
+      ledgerItems,
+      events,
+      auditLogs,
+    });
+    AsyncStorage.setItem("aethex_pillar", pillar);
+    AsyncStorage.setItem("aethex_context", marketContext);
   },
 
   login: async (username: string, context?: MarketContext) => {
@@ -173,18 +207,111 @@ export const useAppStore = create<AppState>((set, get) => ({
     return true;
   },
 
+  loginWithPillar: async (username: string, pillar: EcosystemPillar) => {
+    const normalizedUsername = username.toLowerCase().trim();
+    
+    configService.setPillar(pillar);
+    const config = configService.getConfig();
+    const organization = getOrganizationForPillar(pillar);
+    const members = getMembersForPillar(pillar);
+    const ledgerItems = getLedgerItemsForPillar(pillar);
+    const events = getEventsForPillar(pillar);
+    const auditLogs = getAuditLogsForPillar(pillar);
+    const marketContext = pillar === "studio" ? "education" : "business";
+
+    let currentMember: Member | null = null;
+    let mode: AppMode = "day";
+
+    // Pillar-specific role detection with demo account matching
+    if (pillar === "dev") {
+      // Demo accounts: admin (Day) and dev (Night)
+      if (normalizedUsername === "admin" || normalizedUsername === "lead") {
+        currentMember = members.find(m => m.role === "developer") || members[0];
+        mode = "day";
+      } else if (normalizedUsername === "dev" || normalizedUsername === "community") {
+        currentMember = members.find(m => m.role === "community_member") || 
+                       members.find(m => m.role === "api_user") || 
+                       members[members.length - 1];
+        mode = "night";
+      } else {
+        currentMember = members.find(m => m.name.toLowerCase().includes(normalizedUsername)) || members[0];
+        mode = currentMember?.role === "developer" ? "day" : "night";
+      }
+    } else if (pillar === "studio") {
+      // Demo accounts: mentor (Day) and student (Night)
+      if (normalizedUsername === "mentor" || normalizedUsername === "admin" || normalizedUsername === "client") {
+        currentMember = members.find(m => m.role === "client") || 
+                       members.find(m => m.role === "investor") || 
+                       members[members.length - 1];
+        mode = "day";
+      } else if (normalizedUsername === "student" || normalizedUsername === "foundry") {
+        currentMember = members.find(m => m.role === "foundry_student") || members[0];
+        mode = "night";
+      } else {
+        currentMember = members.find(m => m.name.toLowerCase().includes(normalizedUsername)) || members[0];
+        mode = currentMember?.role === "foundry_student" ? "night" : "day";
+      }
+    } else if (pillar === "foundation") {
+      // Demo accounts: council (Day) and donor (Night)
+      if (normalizedUsername === "council" || normalizedUsername === "admin") {
+        currentMember = members.find(m => m.role === "council_member") || members[0];
+        mode = "day";
+      } else if (normalizedUsername === "donor" || normalizedUsername === "voter") {
+        currentMember = members.find(m => m.role === "donor") || 
+                       members.find(m => m.role === "voter") || 
+                       members[members.length - 1];
+        mode = "night";
+      } else {
+        currentMember = members.find(m => m.name.toLowerCase().includes(normalizedUsername)) || members[0];
+        mode = currentMember?.role === "council_member" ? "day" : "night";
+      }
+    }
+
+    // Ensure we always have a member
+    if (!currentMember && members.length > 0) {
+      currentMember = members[0];
+      mode = config.roles.dayModeRoles.includes(currentMember.role) ? "day" : "night";
+    }
+
+    set({
+      currentMember,
+      mode,
+      currentPillar: pillar,
+      marketContext,
+      config,
+      organization,
+      members,
+      ledgerItems,
+      events,
+      auditLogs,
+      isAuthenticated: true,
+    });
+
+    await AsyncStorage.setItem("aethex_member", JSON.stringify(currentMember));
+    await AsyncStorage.setItem("aethex_mode", mode);
+    await AsyncStorage.setItem("aethex_pillar", pillar);
+    await AsyncStorage.setItem("aethex_context", marketContext);
+
+    if (pillar === "studio" && (currentMember.role === "foundry_student" || currentMember.role === "student")) {
+      consentService.createMockConsent(currentMember.id, organization.id);
+    }
+
+    return true;
+  },
+
   logout: () => {
     set({
       currentMember: null,
       isAuthenticated: false,
       mode: "day",
+      currentPillar: "dev",
       organization: null,
       members: [],
       ledgerItems: [],
       events: [],
       auditLogs: [],
     });
-    AsyncStorage.multiRemove(["aethex_member", "aethex_mode", "aethex_context"]);
+    AsyncStorage.multiRemove(["aethex_member", "aethex_mode", "aethex_context", "aethex_pillar"]);
   },
 
   loadSession: async () => {
