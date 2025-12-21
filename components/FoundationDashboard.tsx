@@ -6,6 +6,7 @@ import * as Haptics from "expo-haptics";
 import { useAppStore, useTheme } from "@/store/appStore";
 import { GlassCard } from "./GlassCard";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { createReputationAction } from "@/services/reputationService";
 
 interface Proposal {
   id: string;
@@ -317,6 +318,7 @@ function GovernanceMetrics() {
 
 export function FoundationDayDashboard() {
   const theme = useTheme();
+  const { addReputationAction } = useAppStore();
   const [activeTab, setActiveTab] = useState<"proposals" | "manifesto">("proposals");
   const [proposals, setProposals] = useState<Proposal[]>(MOCK_PROPOSALS);
   const [userVotes, setUserVotes] = useState<Record<string, "for" | "against">>({});
@@ -335,6 +337,8 @@ export function FoundationDayDashboard() {
       }
       return p;
     }));
+    
+    addReputationAction(createReputationAction("vote_on_proposal", "foundation"));
   };
 
   const hasVoted = (proposalId: string) => !!userVotes[proposalId];

@@ -13,6 +13,11 @@ import {
   Building2,
   GraduationCap,
   Globe,
+  Award,
+  TrendingUp,
+  Code,
+  Palette,
+  Heart,
 } from "lucide-react-native";
 import Animated, { FadeInDown, FadeIn, ZoomIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,6 +25,7 @@ import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useAppStore, useTheme, useTerminology } from "@/store/appStore";
 import { ConsentStatus } from "@/components/GuardianConsentBanner";
+import { EcosystemPillar } from "@/types/domain";
 
 interface MenuItemProps {
   icon: React.ReactNode;
@@ -79,11 +85,13 @@ function MenuItem({ icon, title, subtitle, onPress, rightElement, delay }: MenuI
 }
 
 export default function ProfileScreen() {
-  const { mode, currentMember, marketContext, organization, toggleMode, logout, getTotalXP } = useAppStore();
+  const { mode, currentMember, marketContext, organization, toggleMode, logout, getTotalXP, getReputationScores, reputationScores } = useAppStore();
   const theme = useTheme();
   const terminology = useTerminology();
   const insets = useSafeAreaInsets();
   const totalXP = getTotalXP();
+  const repScores = getReputationScores();
+  const totalReputation = Object.values(reputationScores).reduce((a, b) => a + b, 0);
 
   const handleToggleMode = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -316,6 +324,77 @@ export default function ProfileScreen() {
               Switch View
             </Text>
           </Pressable>
+        </View>
+      </Animated.View>
+
+      <Text
+        style={{
+          fontSize: 13,
+          fontWeight: "600",
+          color: theme.textSecondary,
+          marginBottom: 12,
+          marginLeft: 4,
+          textTransform: "uppercase",
+          letterSpacing: 1,
+        }}
+      >
+        Ecosystem Reputation
+      </Text>
+
+      <Animated.View
+        entering={FadeIn.delay(250).duration(400)}
+        style={{
+          backgroundColor: mode === "day" ? "#f8fafc" : "#1a1a24",
+          borderRadius: 16,
+          padding: 16,
+          marginBottom: 16,
+          borderWidth: 1,
+          borderColor: mode === "day" ? "#e2e8f0" : "#2d2d3a",
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#5533FF20", alignItems: "center", justifyContent: "center" }}>
+            <Award size={18} color="#5533FF" />
+          </View>
+          <View style={{ marginLeft: 12, flex: 1 }}>
+            <Text style={{ fontSize: 16, fontWeight: "600", color: theme.text }}>Cross-Pillar Standing</Text>
+            <Text style={{ fontSize: 12, color: theme.textSecondary }}>
+              {totalReputation.toLocaleString()} total pts
+            </Text>
+          </View>
+          <TrendingUp size={18} color="#22c55e" />
+        </View>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          {repScores.map((rep) => {
+            const pillarConfig: Record<EcosystemPillar, { icon: typeof Code; color: string; name: string }> = {
+              dev: { icon: Code, color: "#22c55e", name: "Dev" },
+              studio: { icon: Palette, color: "#8b5cf6", name: "Studio" },
+              foundation: { icon: Heart, color: "#f59e0b", name: "Foundation" },
+            };
+            const config = pillarConfig[rep.pillar];
+            const IconComponent = config.icon;
+            return (
+              <View
+                key={rep.pillar}
+                style={{
+                  flex: 1,
+                  backgroundColor: `${config.color}15`,
+                  paddingVertical: 10,
+                  paddingHorizontal: 8,
+                  borderRadius: 12,
+                  alignItems: "center",
+                }}
+              >
+                <IconComponent size={16} color={config.color} />
+                <Text style={{ fontSize: 14, fontWeight: "700", color: config.color, marginTop: 4 }}>
+                  {rep.score.toLocaleString()}
+                </Text>
+                <Text style={{ fontSize: 10, color: theme.textSecondary, textTransform: "capitalize" }}>
+                  {rep.level}
+                </Text>
+              </View>
+            );
+          })}
         </View>
       </Animated.View>
 

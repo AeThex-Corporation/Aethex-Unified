@@ -13,6 +13,7 @@ import {
   ComplianceCase,
   EcosystemPillar 
 } from "../types/domain";
+import { ReputationScore, getReputationScores as getReputationScoresFromService, MOCK_USER_SCORES, ReputationAction, MOCK_REPUTATION_HISTORY, applyReputationToScores } from "../services/reputationService";
 import { configService, MarketConfiguration } from "../services/configurationService";
 import { complianceService } from "../services/complianceService";
 import { consentService } from "../services/consentService";
@@ -47,6 +48,9 @@ interface AppState {
   isAuthenticated: boolean;
   isLoading: boolean;
   config: MarketConfiguration;
+  
+  reputationScores: Record<EcosystemPillar, number>;
+  reputationHistory: ReputationAction[];
 
   setMode: (mode: AppMode) => void;
   toggleMode: () => void;
@@ -64,6 +68,8 @@ interface AppState {
   getComplianceStats: () => { totalEvents: number; blockedCount: number; flaggedCount: number; openCases: number };
   getMemberById: (id: string) => Member | undefined;
   getTotalXP: () => number;
+  getReputationScores: () => ReputationScore[];
+  addReputationAction: (action: ReputationAction) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -82,6 +88,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   isAuthenticated: false,
   isLoading: true,
   config: configService.getConfig(),
+  reputationScores: { dev: 1250, studio: 850, foundation: 1750 },
+  reputationHistory: [],
 
   setMode: (mode) => {
     set({ mode });
@@ -421,6 +429,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     return events
       .filter(e => e.memberId === currentMember.id && e.gamification.isUnlocked)
       .reduce((total, e) => total + e.gamification.xp, 0);
+  },
+
+  getReputationScores: () => {
+    const { reputationScores } = get();
+    return getReputationScoresFromService(reputationScores);
+  },
+
+  addReputationAction: (action: ReputationAction) => {
+    set(state => {
+      const newScores = applyReputationToScores(state.reputationScores, action);
+      return {
+        reputationScores: newScores,
+        reputationHistory: [action, ...state.reputationHistory],
+      };
+    });
   },
 }));
 

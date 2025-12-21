@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, Alert } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, Alert, Platform } from "react-native";
 import {
   CheckCircle,
   XCircle,
@@ -15,13 +15,17 @@ import {
   Shield,
   BookOpen,
   GraduationCap,
+  Activity,
+  ClipboardList,
 } from "lucide-react-native";
 import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useAppStore, useTheme, useTerminology, useFeatures } from "@/store/appStore";
 import { AIAssistantWidget } from "@/components/AIAssistant";
-import { Spacing } from "@/constants/theme";
+import { EcosystemPulseDashboard } from "@/components/EcosystemPulse";
+import { Spacing, BorderRadius } from "@/constants/theme";
+import { createReputationAction } from "@/services/reputationService";
 
 interface ApprovalCardProps {
   title: string;
@@ -36,7 +40,7 @@ interface ApprovalCardProps {
 
 function ApprovalCard({ title, requester, type, amount, time, delay, onApprove, onReject }: ApprovalCardProps) {
   const theme = useTheme();
-  const { mode, marketContext } = useAppStore();
+  const { mode, marketContext, addReputationAction, currentPillar } = useAppStore();
   const [status, setStatus] = useState<"pending" | "approved" | "rejected">("pending");
   
   const isEducation = marketContext === "education";
@@ -45,6 +49,8 @@ function ApprovalCard({ title, requester, type, amount, time, delay, onApprove, 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setStatus("approved");
     onApprove?.();
+    
+    addReputationAction(createReputationAction("approve_item", currentPillar || "dev"));
   };
 
   const handleReject = () => {
@@ -210,8 +216,9 @@ function ApprovalCard({ title, requester, type, amount, time, delay, onApprove, 
 function DayModeActions() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { marketContext, ledgerItems, updateLedgerItemStatus } = useAppStore();
+  const { marketContext, ledgerItems, updateLedgerItemStatus, currentPillar } = useAppStore();
   const terminology = useTerminology();
+  const [activeTab, setActiveTab] = useState<"approvals" | "pulse">("approvals");
   
   const isEducation = marketContext === "education";
 
@@ -262,46 +269,97 @@ function DayModeActions() {
       style={{ flex: 1, backgroundColor: theme.background }}
       contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 100 }}
     >
-      <Animated.View entering={FadeInDown.duration(400)}>
-        <View
+      <View style={{ flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.lg }}>
+        <Pressable
+          onPress={() => {
+            if (Platform.OS !== "web") Haptics.selectionAsync();
+            setActiveTab("approvals");
+          }}
           style={{
-            backgroundColor: isEducation ? "#ede9fe" : "#fef3c7",
-            borderRadius: 16,
-            padding: 16,
-            marginBottom: 20,
-            borderWidth: 1,
-            borderColor: isEducation ? "#c4b5fd" : "#fcd34d",
+            flex: 1,
             flexDirection: "row",
+            paddingVertical: 12,
+            borderRadius: BorderRadius.md,
+            backgroundColor: activeTab === "approvals" ? theme.accent : theme.secondary,
             alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
           }}
         >
-          {isEducation ? (
-            <Shield size={24} color="#8b5cf6" />
-          ) : (
-            <Clock size={24} color="#f59e0b" />
-          )}
-          <View style={{ marginLeft: 12 }}>
-            <Text style={{ fontSize: 16, fontWeight: "600", color: isEducation ? "#5b21b6" : "#92400e" }}>
-              {pendingApprovals.length} Pending {terminology.approval}s
-            </Text>
-            <Text style={{ fontSize: 13, color: isEducation ? "#7c3aed" : "#a16207" }}>
-              {isEducation ? "Compliance review required" : "Requires your attention"}
-            </Text>
-          </View>
-        </View>
-      </Animated.View>
-
-      {pendingApprovals.map((approval, index) => (
-        <ApprovalCard
-          key={index}
-          {...approval}
-          delay={100 + index * 100}
-        />
-      ))}
-
-      <View style={{ marginTop: Spacing.xl }}>
-        <AIAssistantWidget />
+          <ClipboardList size={16} color={activeTab === "approvals" ? "#fff" : theme.textSecondary} />
+          <Text style={{ fontSize: 14, fontWeight: "600", color: activeTab === "approvals" ? "#fff" : theme.textSecondary }}>
+            Approvals
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            if (Platform.OS !== "web") Haptics.selectionAsync();
+            setActiveTab("pulse");
+          }}
+          style={{
+            flex: 1,
+            flexDirection: "row",
+            paddingVertical: 12,
+            borderRadius: BorderRadius.md,
+            backgroundColor: activeTab === "pulse" ? theme.accent : theme.secondary,
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+          }}
+        >
+          <Activity size={16} color={activeTab === "pulse" ? "#fff" : theme.textSecondary} />
+          <Text style={{ fontSize: 14, fontWeight: "600", color: activeTab === "pulse" ? "#fff" : theme.textSecondary }}>
+            Ecosystem
+          </Text>
+        </Pressable>
       </View>
+
+      {activeTab === "approvals" ? (
+        <>
+          <Animated.View entering={FadeInDown.duration(400)}>
+            <View
+              style={{
+                backgroundColor: isEducation ? "#ede9fe" : "#fef3c7",
+                borderRadius: 16,
+                padding: 16,
+                marginBottom: 20,
+                borderWidth: 1,
+                borderColor: isEducation ? "#c4b5fd" : "#fcd34d",
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              {isEducation ? (
+                <Shield size={24} color="#8b5cf6" />
+              ) : (
+                <Clock size={24} color="#f59e0b" />
+              )}
+              <View style={{ marginLeft: 12 }}>
+                <Text style={{ fontSize: 16, fontWeight: "600", color: isEducation ? "#5b21b6" : "#92400e" }}>
+                  {pendingApprovals.length} Pending {terminology.approval}s
+                </Text>
+                <Text style={{ fontSize: 13, color: isEducation ? "#7c3aed" : "#a16207" }}>
+                  {isEducation ? "Compliance review required" : "Requires your attention"}
+                </Text>
+              </View>
+            </View>
+          </Animated.View>
+
+          {pendingApprovals.map((approval, index) => (
+            <ApprovalCard
+              key={index}
+              {...approval}
+              delay={100 + index * 100}
+            />
+          ))}
+
+          <View style={{ marginTop: Spacing.xl }}>
+            <AIAssistantWidget />
+          </View>
+        </>
+      ) : (
+        <EcosystemPulseDashboard />
+      )}
     </ScrollView>
   );
 }

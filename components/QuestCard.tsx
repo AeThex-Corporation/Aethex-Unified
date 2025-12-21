@@ -14,6 +14,7 @@ import { useTheme, useAppStore } from "@/store/appStore";
 import { Quest, gamificationService } from "@/services/gamificationService";
 import { GlassCard, GlassContainer } from "./GlassCard";
 import { BorderRadius, Spacing } from "@/constants/theme";
+import { createReputationAction } from "@/services/reputationService";
 
 interface QuestCardProps {
   quest: Quest;
@@ -22,6 +23,7 @@ interface QuestCardProps {
 
 export function QuestCard({ quest, onComplete }: QuestCardProps) {
   const theme = useTheme();
+  const { addReputationAction, currentPillar } = useAppStore();
   const completedSteps = quest.steps.filter(s => s.isCompleted).length;
   const progress = completedSteps / quest.steps.length;
   const isCompleted = progress === 1;
@@ -49,6 +51,8 @@ export function QuestCard({ quest, onComplete }: QuestCardProps) {
       withSpring(1, { damping: 15 })
     );
     onComplete?.(quest.id);
+    
+    addReputationAction(createReputationAction("complete_quest", currentPillar || "dev", quest.xpReward));
   };
 
   const checkStyle = useAnimatedStyle(() => ({
